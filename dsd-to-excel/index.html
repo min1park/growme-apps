@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSD → Excel 변환기</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>DSD → Excel 변환기</h1>
+        <p>DART 감사보고서(.dsd) 파일을 Excel(.xlsx)로 변환합니다</p>
+    </div>
+
+    <div class="container">
+        <!-- 드래그 앤 드롭 영역 -->
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">📂</div>
+            <div class="drop-zone-text">DSD 파일을 여기에 드래그하거나 클릭하여 선택</div>
+            <div class="drop-zone-hint">.dsd 파일만 지원됩니다</div>
+            <input type="file" id="fileInput" accept=".dsd">
+        </div>
+
+        <!-- 파일 정보 -->
+        <div class="file-info" id="fileInfo">
+            <span class="filename" id="fileName"></span>
+            <span class="filesize" id="fileSize"></span>
+        </div>
+
+        <!-- 진행 상태 -->
+        <div class="progress-area" id="progressArea">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">변환 시작 중...</div>
+        </div>
+
+        <!-- 결과 -->
+        <div class="result-area" id="resultArea">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-title" id="resultTitle"></div>
+            <div class="result-detail" id="resultDetail"></div>
+            <div class="result-buttons" id="resultButtons"></div>
+            <div class="sheet-summary" id="sheetSummary"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>모든 처리는 브라우저에서 이루어지며, 파일이 서버로 전송되지 않습니다.</p>
+    </div>
+
+    <!-- 라이브러리 -->
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/exceljs.min.js"></script>
+
+    <!-- 앱 스크립트 -->
+    <script src="js/utils.js"></script>
+    <script src="js/dsd-parser.js"></script>
+    <script src="js/excel-writer.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>
