@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrowMe Apps - 감사도구 포털</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .container {
+            max-width: 1000px;
+            margin: -40px auto 40px;
+            padding: 0 20px;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .app-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .app-icon {
+            width: 56px; height: 56px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+        .app-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
+        .app-card p { font-size: 0.9rem; color: #666; line-height: 1.5; }
+        .app-status {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-live { background: #e8f5e9; color: #2e7d32; }
+        .status-soon { background: #fff3e0; color: #e65100; }
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GrowMe Apps</h1>
+        <p>회계감사 업무 자동화 도구 모음</p>
+    </div>
+
+    <div class="container">
+        <div class="app-grid">
+            <a href="./jet/" class="app-card">
+                <div class="app-icon" style="background: #e3f2fd;">📒</div>
+                <h3>Journal Entry Test</h3>
+                <p>분개장 업로드, 필드 매핑, 기초잔액 통합, 
+                   계정별·월별 증감표 생성 및 이상 분개 탐지</p>
+                <span class="app-status status-live">● 사용 가능</span>
+            </a>
+
+            <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
+                <div class="app-icon" style="background: #fce4ec;">🎯</div>
+                <h3>Audit Sampling</h3>
+                <p>모집단 업로드 후 MUS, 랜덤, 층화추출 등 
+                   다양한 표본추출 자동 수행</p>
+                <span class="app-status status-soon">● 준비 중</span>
+            </a>
+
+            <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
+                <div class="app-icon" style="background: #e8eaf6;">📊</div>
+                <h3>Financial Analytics</h3>
+                <p>재무제표 업로드 후 추세분석, 비율분석, 
+                   이상치 탐지 등 분석적 절차 자동화</p>
+                <span class="app-status status-soon">● 준비 중</span>
+            </a>
+
+            <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
+                <div class="app-icon" style="background: #e0f2f1;">✅</div>
+                <h3>Audit Checklist</h3>
+                <p>감사 체크리스트 관리, 진행상황 추적, 
+                   팀원별 업무 배분 및 현황 대시보드</p>
+                <span class="app-status status-soon">● 준비 중</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 GrowMe · 회계 밖 세상 · 
+           <a href="https://growme.kr" style="color:#1a73e8;">growme.kr</a></p>
+    </div>
+</body>
+</html>
