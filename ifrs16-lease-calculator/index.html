@@ -1,722 +1,1465 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IFRS 16 리스 계산기 v4.0</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .container {
-      display: flex;
-      height: 100vh;
-    }
-    .sidebar {
-      width: 320px;
-      border-right: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-      background: #f9f9f9;
-    }
-    .sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid #ddd;
-      background: #fff;
-    }
-    .sidebar-header h2 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-    }
-    .search-input, .filter-select {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .button-group {
-      display: flex;
-      gap: 8px;
-    }
-    .btn {
-      flex: 1;
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .btn-primary { background: #007bff; color: #fff; }
-    .btn-success { background: #28a745; color: #fff; }
-    .btn-warning { background: #ffc107; color: #000; }
-    .btn-danger { background: #dc3545; color: #fff; }
-    .btn-secondary { background: #6c757d; color: #fff; }
-    .btn-info { background: #17a2b8; color: #fff; }
-    .lease-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-    .lease-item {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      background: #fff;
-    }
-    .lease-item.active {
-      background: #e3f2fd;
-    }
-    .lease-item-id {
-      font-weight: bold;
-      font-size: 14px;
-    }
-    .lease-item-name {
-      font-size: 12px;
-      color: #666;
-    }
-    .lease-item-cat {
-      font-size: 11px;
-      color: #999;
-    }
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .empty-state {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #999;
-    }
-    .form-section {
-      padding: 20px;
-      border-bottom: 1px solid #ddd;
-      background: #fff;
-      overflow-y: auto;
-      max-height: 40vh;
-    }
-    .form-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .form-header h3 {
-      margin: 0;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group label {
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-    .form-group input, .form-group select {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .form-group input[readonly] {
-      background: #f0f0f0;
-    }
-    .full-width {
-      grid-column: span 2;
-    }
-    .history-section {
-      padding: 20px;
-      border-bottom: 1px solid #ddd;
-      background: #f9f9f9;
-      max-height: 30vh;
-      overflow-y: auto;
-    }
-    .history-item {
-      padding: 8px;
-      margin-bottom: 8px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .delta-section {
-      padding: 20px;
-      border-bottom: 1px solid #ddd;
-      background: #fff;
-    }
-    .delta-result {
-      margin-top: 12px;
-      padding: 12px;
-      background: #e7f3ff;
-      border: 1px solid #b3d9ff;
-      border-radius: 4px;
-    }
-    .schedule-section {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      background: #fff;
-    }
-    .summary-box {
-      margin-bottom: 12px;
-      padding: 12px;
-      background: #f0f0f0;
-      border-radius: 4px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    th {
-      padding: 8px;
-      text-align: left;
-      background: #f0f0f0;
-      border-bottom: 2px solid #ddd;
-    }
-    th.right, td.right {
-      text-align: right;
-    }
-    td {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IFRS 16 리스 계산기 v5.0 결산보고서</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  body { margin: 0; background: #0f172a; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>IFRS 16 리스 계산기 v4.0</h2>
-        <input type="text" class="search-input" id="searchInput" placeholder="검색 (ID/자산명)">
-        <select class="filter-select" id="filterSelect">
-          <option value="">전체</option>
-          <option value="부동산">부동산</option>
-          <option value="차량운반구">차량운반구</option>
-          <option value="기계장치">기계장치</option>
-          <option value="비품">비품</option>
-        </select>
-        <div class="button-group">
-          <button class="btn btn-primary" id="addBtn">+ 추가</button>
-          <button class="btn btn-success" id="excelUploadBtn">엑셀</button>
-          <button class="btn btn-warning" id="backupBtn">백업</button>
-        </div>
-        <button class="btn btn-warning" id="restoreBtn" style="width: 100%; margin-top: 8px;">복구</button>
-      </div>
-      <div class="lease-list" id="leaseList"></div>
-    </div>
+<div id="root"></div>
 
-    <div class="main-content">
-      <div class="empty-state" id="emptyState">
-        좌측에서 리스를 선택하세요
-      </div>
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
 
-      <div id="detailView" class="hidden">
-        <div class="form-section">
-          <div class="form-header">
-            <h3>리스 정보</h3>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-primary" id="saveBtn">저장</button>
-              <button class="btn btn-secondary" id="historyBtn">이력</button>
-              <button class="btn btn-danger" id="deleteBtn">삭제</button>
-            </div>
-          </div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>리스 ID</label>
-              <input type="text" id="leaseId" readonly>
-            </div>
-            <div class="form-group">
-              <label>분류</label>
-              <select id="category">
-                <option value="부동산">부동산</option>
-                <option value="차량운반구">차량운반구</option>
-                <option value="기계장치">기계장치</option>
-                <option value="비품">비품</option>
-              </select>
-            </div>
-            <div class="form-group full-width">
-              <label>자산명</label>
-              <input type="text" id="assetName">
-            </div>
-            <div class="form-group">
-              <label>시작일</label>
-              <input type="date" id="startDate">
-            </div>
-            <div class="form-group">
-              <label>종료일</label>
-              <input type="date" id="endDate">
-            </div>
-            <div class="form-group">
-              <label>월 리스료</label>
-              <input type="number" id="monthlyPayment">
-            </div>
-            <div class="form-group">
-              <label>연 이자율(%)</label>
-              <input type="number" step="0.01" id="annualRate">
-            </div>
-            <div class="form-group">
-              <label>초기 사용권자산</label>
-              <input type="number" id="initialRou">
-            </div>
-            <div class="form-group">
-              <label>지급 시기</label>
-              <select id="paymentTiming">
-                <option value="prepaid">선급</option>
-                <option value="postpaid">후급</option>
-              </select>
-            </div>
-          </div>
-        </div>
+// ================================================================
+// IFRS 16 리스 계산기 v5.0 (결산 보고서 기능 추가)
+// ================================================================
 
-        <div class="history-section hidden" id="historySection">
-          <h4 style="margin: 0 0 12px 0;">버전 이력</h4>
-          <div id="historyList"></div>
-        </div>
+const CAT_PREFIX = { '부동산': 'R', '차량운반구': 'V', '기계장치': 'M', '비품': 'F' };
+const FREQ_OPTIONS = [
+  { v: 1, l: '매월 (1개월)' },
+  { v: 2, l: '격월 (2개월)' },
+  { v: 3, l: '분기 (3개월)' },
+  { v: 6, l: '반기 (6개월)' },
+  { v: 12, l: '연 (12개월)' }
+];
 
-        <div class="delta-section">
-          <h4 style="margin: 0 0 12px 0;">변경 차액 계산</h4>
-          <select id="compareSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            <option value="">비교 대상 선택</option>
-          </select>
-          <div id="deltaResult" class="hidden delta-result"></div>
-        </div>
+const fmt = (n) => Math.round(n).toLocaleString();
+const toISO = (d) => {
+  const o = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - o).toISOString().split('T')[0];
+};
+const parseDate = (v) => {
+  if (!v) return '';
+  if (typeof v === 'number') return new Date((v - 25569) * 86400000).toISOString().split('T')[0];
+  return String(v).split('T')[0];
+};
 
-        <div class="schedule-section">
-          <h4 style="margin: 0 0 12px 0;">상환 스케줄</h4>
-          <div id="summaryBox" class="summary-box"></div>
-          <div style="overflow-x: auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>일자</th>
-                  <th class="right">지급액</th>
-                  <th class="right">이자</th>
-                  <th class="right">원금</th>
-                  <th class="right">잔액</th>
-                </tr>
-              </thead>
-              <tbody id="scheduleBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+const genLeaseId = (category, allLeases) => {
+  const prefix = CAT_PREFIX[category] || 'X';
+  const year = new Date().getFullYear();
+  const nums = allLeases
+    .filter(l => l.lease_id && l.lease_id.startsWith(`${prefix}-${year}-`))
+    .map(l => parseInt(l.lease_id.split('-')[2]) || 0);
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
+};
 
-  <script>
-    const CAT_PREFIX = { '부동산': 'R', '차량운반구': 'V', '기계장치': 'M', '비품': 'F' };
-    const fmt = (n) => Math.round(n).toLocaleString();
-    const toISO = (d) => {
-      const o = d.getTimezoneOffset() * 60000;
-      return new Date(d.getTime() - o).toISOString().split('T')[0];
+// ================================================================
+// 계산 엔진
+// ================================================================
+const calcMonthsByDate = (s, e) => {
+  if (!s || !e) return 0;
+  const sd = new Date(s), ed = new Date(e);
+  return Math.max(0, (ed.getFullYear()-sd.getFullYear())*12 + (ed.getMonth()-sd.getMonth()) + 1);
+};
+
+const getPayDates = (startDate, totalMonths, timing, freq = 1) => {
+  const items = [];
+  const s = new Date(startDate);
+  s.setDate(1); 
+  s.setHours(12,0,0,0); 
+
+  for (let i = 0; i < totalMonths; i += freq) {
+    const monthsInPeriod = Math.min(freq, totalMonths - i);
+    let d;
+    
+    if (timing === 'prepaid') {
+      d = new Date(s.getFullYear(), s.getMonth() + i, 1);
+    } else {
+      d = new Date(s.getFullYear(), s.getMonth() + i + monthsInPeriod, 0);
+    }
+    
+    d.setHours(12,0,0,0);
+    items.push({ date: d, monthsCovered: monthsInPeriod });
+  }
+  return items;
+};
+
+const calcAnnuityPV = (rate, n, pmt, residual, timing, months, freq) => {
+  if (rate === 0) return (pmt * n) + residual;
+
+  const periodRate = Math.pow(1 + rate, freq) - 1;
+
+  let annuityFactor = 0;
+  if (timing === 'prepaid') {
+    if (n === 1) annuityFactor = 1;
+    else annuityFactor = 1 + (1 - Math.pow(1 + periodRate, -(n - 1))) / periodRate;
+  } else {
+    annuityFactor = (1 - Math.pow(1 + periodRate, -n)) / periodRate;
+  }
+  const pmtPV = pmt * annuityFactor;
+
+  const resPV = residual > 0 ? residual * Math.pow(1 + rate, -months) : 0;
+
+  return pmtPV + resPV;
+};
+
+const computeLease = (lease) => {
+  try {
+    const userMonths = parseInt(lease.leaseTerm);
+    const dateMonths = calcMonthsByDate(lease.startDate, lease.endDate);
+    const months = (userMonths > 0) ? userMonths : dateMonths;
+
+    if (months === 0) return { 
+      error: '리스 기간이 0개월입니다.',
+      months:0, schedule:[], cashFlows:[], subleaseSchedule:[]
     };
 
-    const genLeaseId = (category, allLeases) => {
-      const prefix = CAT_PREFIX[category] || 'X';
-      const year = new Date().getFullYear();
-      const nums = allLeases
-        .filter(l => l.lease_id && l.lease_id.startsWith(`${prefix}-${year}-`))
-        .map(l => parseInt(l.lease_id.split('-')[2]) || 0);
-      const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-      return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
-    };
+    const freq = parseInt(lease.paymentFrequency || 1);
+    const annRate = (parseFloat(lease.ibrRate)||0)/100;
+    
+    if (annRate < 0) {
+      return { error: '이자율은 0% 이상이어야 합니다.', months, schedule:[], cashFlows:[], subleaseSchedule:[] };
+    }
+    
+    const monRate = annRate > 0 ? Math.pow(1 + annRate, 1/12) - 1 : 0;
+    
+    const pmt = parseFloat(lease.monthlyPayment)||0;
+    const prepaid = parseFloat(lease.prepaidLease)||0;
+    const directCost = parseFloat(lease.initialDirectCost)||0;
+    const incentive = parseFloat(lease.leaseIncentive)||0;
+    const residual = parseFloat(lease.residualValue)||0;
 
-    const calcMonths = (s, e) => {
-      if (!s || !e) return 0;
-      const sd = new Date(s), ed = new Date(e);
-      return Math.max(0, (ed.getFullYear()-sd.getFullYear())*12 + (ed.getMonth()-sd.getMonth()) + 1);
-    };
+    if (pmt <= 0) {
+      return { error: '리스료는 0보다 커야 합니다.', months, schedule:[], cashFlows:[], subleaseSchedule:[] };
+    }
 
-    const getPayDates = (startDate, months, timing) => {
-      const dates = [], s = new Date(startDate);
-      s.setDate(1); s.setHours(0,0,0,0);
-      for (let i = 0; i < months; i++) {
-        const d = new Date(s.getFullYear(), s.getMonth()+i, 1);
-        if (timing === 'postpaid') { d.setMonth(d.getMonth()+1); d.setDate(0); }
-        dates.push(d);
-      }
-      return dates;
-    };
+    const payItems = getPayDates(lease.startDate, months, lease.paymentTiming, freq);
+    
+    const startDateObj = new Date(lease.startDate);
+    startDateObj.setDate(1); startDateObj.setHours(12,0,0,0); 
 
-    const computeSchedule = (lease) => {
-      if (!lease.start_date || !lease.end_date) return [];
-      const months = calcMonths(lease.start_date, lease.end_date);
-      const r = (lease.annual_rate || 0) / 100 / 12;
-      const pmt = lease.monthly_payment || 0;
-      const dates = getPayDates(lease.start_date, months, lease.payment_timing || 'prepaid');
+    const cashFlows = [];
+    cashFlows.push({ seq: 0, date: toISO(startDateObj), amount: 0, description: '기준일' });
 
-      let bal = lease.initial_rou || 0, cumInt = 0, cumPrin = 0;
-      const rows = [];
-
-      for (let i = 0; i < months; i++) {
-        const int = bal * r;
-        const prin = pmt - int;
-        bal -= prin;
-        cumInt += int; cumPrin += prin;
-        rows.push({
-          date: toISO(dates[i]),
-          payment: pmt,
-          interest: int,
-          principal: prin,
-          balance: bal,
-          cumInt, cumPrin
-        });
-      }
-      return rows;
-    };
-
-    const computeReduction = (lease) => {
-      if (!lease.start_date || !lease.end_date) return null;
-      const sch = computeSchedule(lease);
-      if (!sch.length) return null;
-      const totalInt = sch.reduce((s,r)=>s+r.interest,0);
-      const totalPrin = sch.reduce((s,r)=>s+r.principal,0);
-      return {
-        totalInterest: totalInt,
-        totalPrincipal: totalPrin,
-        totalPayment: totalInt + totalPrin,
-        finalBalance: sch[sch.length-1]?.balance || 0
-      };
-    };
-
-    const calcDelta = (prev, curr) => {
-      const p = computeReduction(prev);
-      const c = computeReduction(curr);
-      if (!p || !c) return null;
-      return {
-        rou: (curr.initial_rou||0) - (prev.initial_rou||0),
-        lease_liability: (curr.initial_rou||0) - (prev.initial_rou||0),
-        totalInt: c.totalInterest - p.totalInterest
-      };
-    };
-
-    // State
-    let leases = [];
-    let selectedKey = null;
-    let filterCategory = '';
-    let searchTerm = '';
-
-    // Load from localStorage
-    const loadLeases = () => {
-      const saved = localStorage.getItem('ifrs16_leases');
-      if (saved) leases = JSON.parse(saved);
-      renderLeaseList();
-    };
-
-    const saveLeases = () => {
-      localStorage.setItem('ifrs16_leases', JSON.stringify(leases));
-    };
-
-    const renderLeaseList = () => {
-      let filtered = leases;
-      if (filterCategory) filtered = filtered.filter(l => l.category === filterCategory);
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        filtered = filtered.filter(l =>
-          (l.lease_id||'').toLowerCase().includes(term) ||
-          (l.asset_name||'').toLowerCase().includes(term)
-        );
-      }
-
-      const list = document.getElementById('leaseList');
-      list.innerHTML = '';
-      filtered.forEach(lease => {
-        const item = document.createElement('div');
-        item.className = 'lease-item' + (selectedKey === lease.key ? ' active' : '');
-        item.innerHTML = `
-          <div class="lease-item-id">${lease.lease_id}</div>
-          <div class="lease-item-name">${lease.asset_name}</div>
-          <div class="lease-item-cat">${lease.category}</div>
-        `;
-        item.onclick = () => selectLease(lease.key);
-        list.appendChild(item);
+    payItems.forEach((item, idx) => {
+      cashFlows.push({
+        seq: idx + 1,
+        date: item.date.toISOString().split('T')[0],
+        amount: pmt,
+        description: `${idx+1}회차`
       });
-    };
+    });
 
-    const selectLease = (key) => {
-      selectedKey = key;
-      renderLeaseList();
-      renderDetail();
-    };
+    if (residual > 0) {
+      const endDate = new Date(lease.endDate);
+      endDate.setHours(12,0,0,0);
+      cashFlows.push({ 
+        seq: '잔존', 
+        date: toISO(endDate), 
+        amount: residual,
+        description: '잔존가치보증'
+      });
+    }
 
-    const renderDetail = () => {
-      const lease = leases.find(l => l.key === selectedKey);
-      if (!lease) {
-        document.getElementById('emptyState').classList.remove('hidden');
-        document.getElementById('detailView').classList.add('hidden');
-        return;
+    const numPayments = payItems.length;
+    const pvLeasePayments = calcAnnuityPV(monRate, numPayments, pmt, residual, lease.paymentTiming, months, freq);
+
+    const isModification = lease.isModification;
+    let carryLiab = 0, carryROU = 0, carryCost = 0, carryAccumDepr = 0;
+    
+    if (isModification) {
+      carryLiab = parseFloat(lease.carriedOverLiability)||0;
+      carryROU = parseFloat(lease.carriedOverROU)||0;
+      carryCost = parseFloat(lease.carriedOverAssetCost)||0;
+      carryAccumDepr = parseFloat(lease.carriedOverAccumDepreciation)||0;
+      
+      if (carryLiab === 0 || carryROU === 0) {
+        return { error: '변경 계약은 이월 부채 및 자산 입력 필수입니다.', months, schedule:[], cashFlows:[], subleaseSchedule:[] };
+      }
+    }
+
+    const initialLiability = isModification ? carryLiab : pvLeasePayments;
+    const assetCost = isModification 
+      ? carryCost 
+      : pvLeasePayments + prepaid + directCost - incentive;
+    const initialROU = isModification ? carryROU : assetCost;
+
+    let effectiveMonths = months;
+    let subleaseStartPeriod = null;
+    let isFinanceSublease = false;
+
+    if (lease.isSublease && lease.subleaseType === 'finance' && lease.subleaseStartDate) {
+      const subStart = new Date(lease.subleaseStartDate);
+      const leaseStart = new Date(lease.startDate);
+      const subMonth = Math.max(0, (subStart.getFullYear()-leaseStart.getFullYear())*12 + (subStart.getMonth()-leaseStart.getMonth()));
+      
+      if (subMonth < months) {
+        isFinanceSublease = true;
+        effectiveMonths = subMonth;
+        subleaseStartPeriod = subMonth + 1;
+      }
+    }
+
+    const monthlyDepreciation = effectiveMonths > 0 ? assetCost / effectiveMonths : 0;
+
+    const schedule = [];
+    let liab = initialLiability;
+    let nbv = initialROU;
+    let accumDepreciation = isModification ? carryAccumDepr : 0;
+
+    for (let m = 0; m < months; m++) {
+      const paymentIdx = Math.floor(m / freq);
+      let isPaidThisMonth = (m % freq === 0) && paymentIdx < numPayments;
+      if (lease.paymentTiming === 'postpaid' && m % freq === (freq - 1) && paymentIdx < numPayments) {
+        isPaidThisMonth = true;
+      }
+      
+      const paymentDate = isPaidThisMonth 
+        ? payItems[paymentIdx].date.toISOString().split('T')[0] 
+        : '';
+
+      const isSubleasePeriod = isFinanceSublease && m >= subleaseStartPeriod - 1;
+
+      const beginLiability = liab;
+      const interest = liab * monRate;
+      const payment = isPaidThisMonth ? pmt : 0;
+      const principal = payment - interest;
+      const endLiability = Math.max(0, liab - principal);
+
+      let currentDepreciation = 0;
+      if (!isSubleasePeriod) {
+        currentDepreciation = monthlyDepreciation;
+        accumDepreciation += currentDepreciation;
+        nbv = Math.max(0, nbv - currentDepreciation);
       }
 
-      document.getElementById('emptyState').classList.add('hidden');
-      document.getElementById('detailView').classList.remove('hidden');
-
-      document.getElementById('leaseId').value = lease.lease_id || '';
-      document.getElementById('category').value = lease.category || '부동산';
-      document.getElementById('assetName').value = lease.asset_name || '';
-      document.getElementById('startDate').value = lease.start_date || '';
-      document.getElementById('endDate').value = lease.end_date || '';
-      document.getElementById('monthlyPayment').value = lease.monthly_payment || 0;
-      document.getElementById('annualRate').value = lease.annual_rate || 4.5;
-      document.getElementById('initialRou').value = lease.initial_rou || 0;
-      document.getElementById('paymentTiming').value = lease.payment_timing || 'prepaid';
-
-      renderSchedule(lease);
-      renderHistory(lease);
-      renderCompareOptions(lease);
-    };
-
-    const renderSchedule = (lease) => {
-      const schedule = computeSchedule(lease);
-      const reduction = computeReduction(lease);
-
-      const tbody = document.getElementById('scheduleBody');
-      tbody.innerHTML = '';
-      schedule.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${row.date}</td>
-          <td class="right">${fmt(row.payment)}</td>
-          <td class="right">${fmt(row.interest)}</td>
-          <td class="right">${fmt(row.principal)}</td>
-          <td class="right">${fmt(row.balance)}</td>
-        `;
-        tbody.appendChild(tr);
+      schedule.push({
+        period: m + 1,
+        paymentDate: paymentDate || '',
+        beginLiability: beginLiability,
+        interest: interest,
+        payment: payment,
+        principal: principal,
+        endLiability: endLiability,
+        monthlyDepreciation: currentDepreciation,
+        netBookValue: nbv,
+        accumulatedDepreciation: accumDepreciation,
+        isSubleasePeriod: isSubleasePeriod
       });
 
-      const summary = document.getElementById('summaryBox');
-      if (reduction) {
-        summary.innerHTML = `
-          <div style="font-size: 13px;">총 지급액: <strong>${fmt(reduction.totalPayment)}</strong></div>
-          <div style="font-size: 13px;">총 이자: <strong>${fmt(reduction.totalInterest)}</strong></div>
-          <div style="font-size: 13px;">총 원금: <strong>${fmt(reduction.totalPrincipal)}</strong></div>
-          <div style="font-size: 13px;">최종 잔액: <strong>${fmt(reduction.finalBalance)}</strong></div>
-        `;
-      } else {
-        summary.innerHTML = '';
-      }
-    };
+      liab = endLiability;
+    }
 
-    const renderHistory = (lease) => {
-      const versions = lease.versions || [];
-      const histList = document.getElementById('historyList');
-      histList.innerHTML = '';
-      versions.forEach(v => {
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML = `
-          <div>
-            <div style="font-weight: bold; font-size: 13px;">${v.description}</div>
-            <div style="font-size: 11px; color: #666;">${new Date(v.timestamp).toLocaleString('ko-KR')}</div>
-          </div>
-          <button class="btn btn-info" style="padding: 4px 8px; font-size: 12px;" onclick="restoreVersion(${v.versionKey})">복원</button>
-        `;
-        histList.appendChild(item);
-      });
-    };
+    let subleaseSchedule = [];
+    let subleaseReceivable = 0;
 
-    const renderCompareOptions = (lease) => {
-      const versions = lease.versions || [];
-      const select = document.getElementById('compareSelect');
-      select.innerHTML = '<option value="">비교 대상 선택</option>';
-      versions.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.versionKey;
-        opt.textContent = `${v.description} (${new Date(v.timestamp).toLocaleDateString('ko-KR')})`;
-        select.appendChild(opt);
-      });
-    };
+    if (isFinanceSublease && subleaseStartPeriod) {
+      const remainingLiability = schedule[subleaseStartPeriod - 2]?.endLiability || 0;
+      const remainingNBV = schedule[subleaseStartPeriod - 2]?.netBookValue || 0;
 
-    const getCurrentFormData = () => {
-      return {
-        lease_id: document.getElementById('leaseId').value,
-        category: document.getElementById('category').value,
-        asset_name: document.getElementById('assetName').value,
-        start_date: document.getElementById('startDate').value,
-        end_date: document.getElementById('endDate').value,
-        monthly_payment: +document.getElementById('monthlyPayment').value,
-        annual_rate: +document.getElementById('annualRate').value,
-        initial_rou: +document.getElementById('initialRou').value,
-        payment_timing: document.getElementById('paymentTiming').value
-      };
-    };
+      subleaseReceivable = remainingLiability;
+      const subMonths = months - (subleaseStartPeriod - 1);
 
-    // Event handlers
-    document.getElementById('addBtn').onclick = () => {
-      const newKey = Date.now();
-      const newId = genLeaseId('부동산', leases);
-      const newLease = {
-        key: newKey,
-        lease_id: newId,
-        category: '부동산',
-        asset_name: '신규 리스',
-        start_date: toISO(new Date()),
-        end_date: toISO(new Date()),
-        monthly_payment: 0,
-        annual_rate: 4.5,
-        initial_rou: 0,
-        payment_timing: 'prepaid',
-        versions: [{
-          versionKey: newKey,
-          timestamp: new Date().toISOString(),
-          description: '최초 생성',
-          snapshot: {}
-        }]
-      };
-      leases.push(newLease);
-      saveLeases();
-      selectLease(newKey);
-    };
+      if (subMonths > 0) {
+        let receivable = subleaseReceivable;
+        const subCollectionPerMonth = pmt;
 
-    document.getElementById('saveBtn').onclick = () => {
-      if (!selectedKey) return;
-      const desc = prompt('변경 설명:', '수정') || '수정';
-      const idx = leases.findIndex(l => l.key === selectedKey);
-      if (idx < 0) return;
-
-      const formData = getCurrentFormData();
-      const vKey = Date.now();
-      const updated = {
-        ...formData,
-        key: selectedKey,
-        versions: [
-          ...(leases[idx].versions || []),
-          {
-            versionKey: vKey,
-            timestamp: new Date().toISOString(),
-            description: desc,
-            snapshot: { ...formData }
+        for (let s = 0; s < subMonths; s++) {
+          const paymentIdx = Math.floor((subleaseStartPeriod - 1 + s) / freq);
+          let isCollected = ((subleaseStartPeriod - 1 + s) % freq === 0) && paymentIdx < numPayments;
+          if (lease.paymentTiming === 'postpaid' && (subleaseStartPeriod - 1 + s) % freq === (freq - 1) && paymentIdx < numPayments) {
+            isCollected = true;
           }
-        ]
-      };
-      leases[idx] = updated;
-      saveLeases();
-      renderLeaseList();
-      renderDetail();
-      alert('저장되었습니다');
+
+          const beginReceivable = receivable;
+          const interestIncome = receivable * monRate;
+          const collection = isCollected ? subCollectionPerMonth : 0;
+          const principalCollection = collection - interestIncome;
+          const endReceivable = Math.max(0, receivable - principalCollection);
+
+          subleaseSchedule.push({
+            seq: s + 1,
+            date: isCollected ? payItems[paymentIdx].date.toISOString().split('T')[0] : '',
+            beginReceivable: beginReceivable,
+            interestIncome: interestIncome,
+            collection: collection,
+            principalCollection: principalCollection,
+            endReceivable: endReceivable
+          });
+
+          receivable = endReceivable;
+        }
+      }
+    }
+
+    return {
+      months,
+      initialLiability,
+      initialROU,
+      assetCost,
+      monthlyDepreciation,
+      schedule,
+      cashFlows,
+      isFinanceSublease,
+      subleaseSchedule,
+      subleaseReceivable
     };
 
-    document.getElementById('deleteBtn').onclick = () => {
-      if (!selectedKey) return;
-      if (!confirm('삭제하시겠습니까?')) return;
-      leases = leases.filter(l => l.key !== selectedKey);
-      saveLeases();
-      selectedKey = null;
-      renderLeaseList();
-      renderDetail();
+  } catch (err) {
+    return { error: `계산 오류: ${err.message}`, months:0, schedule:[], cashFlows:[], subleaseSchedule:[] };
+  }
+};
+
+// ================================================================
+// 🆕 결산 보고서 집계 함수
+// ================================================================
+const generateAnnualReport = (leases, fiscalYear) => {
+  const fy = parseInt(fiscalYear);
+  const beginDate = `${fy-1}-12-31`;
+  const endDate = `${fy}-12-31`;
+  
+  // 활성 리스만 필터링
+  const activeLeases = leases.filter(l => l.status === 'active' && l.calculatedData && !l.calculatedData.error);
+  
+  // 자산군별 그룹화
+  const categories = ['부동산', '차량운반구', '기계장치', '비품'];
+  const report = {};
+  
+  categories.forEach(cat => {
+    const catLeases = activeLeases.filter(l => l.assetCategory === cat);
+    if (catLeases.length === 0) return;
+    
+    // 신규/기존 분류
+    const newLeases = catLeases.filter(l => {
+      const startYear = new Date(l.startDate).getFullYear();
+      return startYear === fy;
+    });
+    const existingLeases = catLeases.filter(l => {
+      const startYear = new Date(l.startDate).getFullYear();
+      return startYear < fy;
+    });
+    
+    // 리스부채 집계
+    const liabBegin = sumBalanceAtDate(existingLeases, beginDate, 'liability');
+    const liabEnd = sumBalanceAtDate(catLeases, endDate, 'liability');
+    const liabNew = sumInitialBalances(newLeases, fy, 'liability');
+    const liabInterest = sumPeriodItems(catLeases, fy, 'interest');
+    const liabPrincipal = sumPeriodItems(catLeases, fy, 'principal');
+    const liabIncrease = liabNew;
+    const liabDecrease = liabPrincipal;
+    
+    // 사용권자산 집계
+    const rouBegin = sumBalanceAtDate(existingLeases, beginDate, 'rou');
+    const rouEnd = sumBalanceAtDate(catLeases, endDate, 'rou');
+    const rouNew = sumInitialBalances(newLeases, fy, 'rou');
+    const rouDepreciation = sumPeriodItems(catLeases, fy, 'depreciation');
+    const rouIncrease = rouNew;
+    const rouDecrease = 0; // 종료로 인한 감소는 별도 추적 필요
+    
+    report[cat] = {
+      newLeases: newLeases.length,
+      existingLeases: existingLeases.length,
+      liability: {
+        begin: liabBegin,
+        increase: liabIncrease,
+        interest: liabInterest,
+        decrease: liabDecrease,
+        end: liabEnd
+      },
+      rou: {
+        begin: rouBegin,
+        increase: rouIncrease,
+        depreciation: rouDepreciation,
+        decrease: rouDecrease,
+        end: rouEnd
+      }
+    };
+  });
+  
+  return report;
+};
+
+// 특정 시점의 잔액 합계 (기말 기준)
+const sumBalanceAtDate = (leases, dateStr, type) => {
+  let total = 0;
+  const targetDate = new Date(dateStr);
+  
+  leases.forEach(lease => {
+    const calc = lease.calculatedData;
+    if (!calc || !calc.schedule) return;
+    
+    const startDate = new Date(lease.startDate);
+    const endDate = new Date(lease.endDate);
+    
+    if (targetDate < startDate || targetDate > endDate) return;
+    
+    // 해당 월까지의 스케줄 찾기
+    const monthsElapsed = Math.floor((targetDate - startDate) / (1000*60*60*24*30));
+    const scheduleRow = calc.schedule[Math.min(monthsElapsed, calc.schedule.length - 1)];
+    
+    if (scheduleRow) {
+      if (type === 'liability') {
+        total += scheduleRow.endLiability;
+      } else if (type === 'rou') {
+        total += scheduleRow.netBookValue;
+      }
+    }
+  });
+  
+  return total;
+};
+
+// 신규 리스의 초기 잔액 합계
+const sumInitialBalances = (leases, fiscalYear, type) => {
+  let total = 0;
+  leases.forEach(lease => {
+    const calc = lease.calculatedData;
+    if (!calc) return;
+    
+    const startYear = new Date(lease.startDate).getFullYear();
+    if (startYear === fiscalYear) {
+      if (type === 'liability') {
+        total += calc.initialLiability || 0;
+      } else if (type === 'rou') {
+        total += calc.initialROU || 0;
+      }
+    }
+  });
+  return total;
+};
+
+// 기간 중 발생액 합계 (이자비용, 원금상환, 감가상각)
+const sumPeriodItems = (leases, fiscalYear, type) => {
+  let total = 0;
+  const fyStart = new Date(`${fiscalYear}-01-01`);
+  const fyEnd = new Date(`${fiscalYear}-12-31`);
+  
+  leases.forEach(lease => {
+    const calc = lease.calculatedData;
+    if (!calc || !calc.schedule) return;
+    
+    calc.schedule.forEach(row => {
+      const rowDate = new Date(lease.startDate);
+      rowDate.setMonth(rowDate.getMonth() + row.period - 1);
+      
+      if (rowDate >= fyStart && rowDate <= fyEnd) {
+        if (type === 'interest') {
+          total += row.interest || 0;
+        } else if (type === 'principal') {
+          total += row.principal || 0;
+        } else if (type === 'depreciation') {
+          total += row.monthlyDepreciation || 0;
+        }
+      }
+    });
+  });
+  
+  return total;
+};
+
+// ================================================================
+// React App
+// ================================================================
+const App = () => {
+  const [leases, setLeases] = useState([]);
+  const [activeTab, setActiveTab] = useState('input');
+  const [form, setForm] = useState({
+    assetCategory: '부동산',
+    leaseName: '',
+    department: '',
+    assetDetail: '',
+    startDate: '',
+    endDate: '',
+    leaseTerm: '',
+    monthlyPayment: '',
+    paymentFrequency: 1,
+    paymentTiming: 'prepaid',
+    ibrRate: '',
+    prepaidLease: '0',
+    initialDirectCost: '0',
+    leaseIncentive: '0',
+    residualValue: '0',
+    isSublease: false,
+    subleaseType: 'finance',
+    subleaseStartDate: '',
+    notes: '',
+    carriedOverLiability: '',
+    carriedOverROU: '',
+    carriedOverAssetCost: '',
+    carriedOverAccumDepreciation: ''
+  });
+
+  const [modMode, toggleModMode] = useState(false);
+  const [selParent, setSelParent] = useState(null);
+  const [selectedLease, setSelectedLease] = useState(null);
+  const [cmpId, setCmpId] = useState(null);
+  const [showCashFlows, setShowCashFlows] = useState(false);
+  
+  // 🆕 결산 보고서 상태
+  const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    const saved = localStorage.getItem('leaseData_v4');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const computed = parsed.map(l => ({...l, calculatedData: computeLease(l)}));
+        setLeases(computed);
+      } catch(e) {
+        console.error('로딩 실패:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (leases.length > 0) {
+      localStorage.setItem('leaseData_v4', JSON.stringify(leases));
+    }
+  }, [leases]);
+
+  const activeLeases = useMemo(() => leases.filter(l => l.status === 'active'), [leases]);
+  const leaseGroups = useMemo(() => {
+    const groups = {};
+    leases.forEach(l => {
+      if (!groups[l.lease_id]) groups[l.lease_id] = [];
+      groups[l.lease_id].push(l);
+    });
+    Object.values(groups).forEach(g => g.sort((a,b) => a.version - b.version));
+    return groups;
+  }, [leases]);
+
+  const totalLiab = useMemo(() => 
+    activeLeases.reduce((sum, l) => 
+      sum + (l.calculatedData?.initialLiability || 0), 0
+    ), [activeLeases]
+  );
+
+  const selectParent = (l) => {
+    setSelParent(l);
+    const newStartDate = form.startDate || toISO(new Date());
+    setForm({
+      ...form,
+      assetCategory: l.assetCategory,
+      leaseName: l.leaseName,
+      department: l.department,
+      assetDetail: l.assetDetail,
+      startDate: newStartDate,
+      endDate: '',
+      leaseTerm: '',
+      monthlyPayment: l.monthlyPayment,
+      paymentFrequency: l.paymentFrequency,
+      paymentTiming: l.paymentTiming,
+      ibrRate: l.ibrRate,
+      prepaidLease: '0',
+      initialDirectCost: '0',
+      leaseIncentive: '0',
+      residualValue: '0',
+      isSublease: false,
+      subleaseType: 'finance',
+      subleaseStartDate: '',
+      notes: '',
+      carriedOverLiability: '',
+      carriedOverROU: '',
+      carriedOverAssetCost: '',
+      carriedOverAccumDepreciation: ''
+    });
+  };
+
+  const fetchBalanceAtDate = () => {
+    if (!selParent || !form.startDate) {
+      alert('변경일(시작일)을 입력하세요.');
+      return;
+    }
+
+    const modDate = new Date(form.startDate);
+    modDate.setDate(modDate.getDate() - 1);
+    const targetDate = toISO(modDate);
+
+    const calc = selParent.calculatedData;
+    if (!calc || !calc.schedule || calc.schedule.length === 0) {
+      alert('부모 리스 계산 데이터가 없습니다.');
+      return;
+    }
+
+    const startDate = new Date(selParent.startDate);
+    const monthsElapsed = Math.max(0, Math.floor((modDate - startDate) / (1000*60*60*24*30)));
+    const row = calc.schedule[Math.min(monthsElapsed, calc.schedule.length - 1)];
+
+    if (!row) {
+      alert('해당 시점의 잔액을 찾을 수 없습니다.');
+      return;
+    }
+
+    setForm({
+      ...form,
+      carriedOverLiability: String(Math.round(row.endLiability)),
+      carriedOverROU: String(Math.round(row.netBookValue)),
+      carriedOverAssetCost: String(Math.round(calc.assetCost || 0)),
+      carriedOverAccumDepreciation: String(Math.round(row.accumulatedDepreciation || 0))
+    });
+
+    alert(`✅ ${targetDate} 시점 잔액 조회 완료`);
+  };
+
+  const handleSubmit = () => {
+    if (!form.leaseName || !form.startDate) {
+      alert('리스명과 시작일은 필수입니다.');
+      return;
+    }
+
+    const isModification = modMode && selParent;
+    const newLeaseId = isModification ? selParent.lease_id : genLeaseId(form.assetCategory, leases);
+    const newVersion = isModification 
+      ? Math.max(...leases.filter(l => l.lease_id === selParent.lease_id).map(l => l.version)) + 1 
+      : 1;
+
+    if (isModification) {
+      setLeases(prev => prev.map(l => 
+        l.lease_id === selParent.lease_id && l.version === selParent.version
+          ? {...l, status: 'superseded'}
+          : l
+      ));
+    }
+
+    const newLease = {
+      lease_id: newLeaseId,
+      version: newVersion,
+      status: 'active',
+      ...form,
+      isModification: isModification,
+      parentLeaseId: isModification ? selParent.lease_id : '',
+      parentVersion: isModification ? selParent.version : 0,
+      calculatedData: null
     };
 
-    document.getElementById('historyBtn').onclick = () => {
-      const section = document.getElementById('historySection');
-      section.classList.toggle('hidden');
-    };
+    newLease.calculatedData = computeLease(newLease);
 
-    document.getElementById('backupBtn').onclick = () => {
-      const blob = new Blob([JSON.stringify(leases, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ifrs16_backup_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-    };
+    if (newLease.calculatedData.error) {
+      alert(`⚠️ 계산 오류: ${newLease.calculatedData.error}`);
+      return;
+    }
 
-    document.getElementById('restoreBtn').onclick = () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          try {
-            const data = JSON.parse(ev.target.result);
-            if (!Array.isArray(data)) throw new Error('Invalid format');
-            leases = data;
-            saveLeases();
-            renderLeaseList();
-            alert('복구 완료');
-          } catch (err) {
-            alert('복구 실패: ' + err.message);
-          }
+    setLeases(prev => [...prev, newLease]);
+    
+    setForm({
+      assetCategory: '부동산',
+      leaseName: '',
+      department: '',
+      assetDetail: '',
+      startDate: '',
+      endDate: '',
+      leaseTerm: '',
+      monthlyPayment: '',
+      paymentFrequency: 1,
+      paymentTiming: 'prepaid',
+      ibrRate: '',
+      prepaidLease: '0',
+      initialDirectCost: '0',
+      leaseIncentive: '0',
+      residualValue: '0',
+      isSublease: false,
+      subleaseType: 'finance',
+      subleaseStartDate: '',
+      notes: '',
+      carriedOverLiability: '',
+      carriedOverROU: '',
+      carriedOverAssetCost: '',
+      carriedOverAccumDepreciation: ''
+    });
+
+    if (modMode) {
+      toggleModMode(false);
+      setSelParent(null);
+    }
+
+    alert('✅ 등록 완료!');
+  };
+
+  const deleteLease = (id, ver) => {
+    if (!window.confirm('정말 삭제하시겠습니까?')) return;
+    setLeases(prev => prev.filter(l => !(l.lease_id === id && l.version === ver)));
+  };
+
+  const setStartPreset = (mode) => {
+    const now = new Date();
+    if (mode === 'y') setForm({...form, startDate: `${now.getFullYear()}-01-01`});
+    else if (mode === 'm') setForm({...form, startDate: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`});
+  };
+
+  const calcDiff = (leaseId) => {
+    const versions = leaseGroups[leaseId] || [];
+    if (versions.length < 2) return [];
+
+    const diffs = [];
+    for (let i = 1; i < versions.length; i++) {
+      const v1 = versions[i-1];
+      const v2 = versions[i];
+      const c1 = v1.calculatedData;
+      const c2 = v2.calculatedData;
+
+      if (!c1 || !c2 || c1.error || c2.error) continue;
+
+      const liabBefore = parseFloat(v2.carriedOverLiability || 0);
+      const liabAfter = c2.initialLiability;
+      const rouBefore = parseFloat(v2.carriedOverROU || 0);
+      const rouAfter = c2.initialROU;
+
+      diffs.push({
+        v1, v2,
+        modDate: v2.startDate,
+        liabBefore,
+        liabAfter,
+        liabDiff: liabAfter - liabBefore,
+        rouBefore,
+        rouAfter,
+        rouDiff: rouAfter - rouBefore
+      });
+    }
+    return diffs;
+  };
+
+  const clearAllData = () => {
+    if (!window.confirm('⚠️ 모든 데이터를 삭제합니다. 계속하시겠습니까?')) return;
+    setLeases([]);
+    localStorage.removeItem('leaseData_v4');
+    alert('✅ 전체 초기화 완료');
+  };
+
+  const downloadTemplate = () => {
+    const header = [
+      '리스ID','버전','구분','리스명','제출부서','자산세부내역',
+      '리스시작일','리스종료일','계약월수','회차별리스료','납부주기월수','납부방식',
+      '증분차입이자율(%)','선급리스료','초기직접원가','리스인센티브','잔존가치보증',
+      '변경계약(Y/N)','부모리스ID','부모버전','이월부채','이월자산','이월취득가액','이월감가상각누계액',
+      '전대리스여부(Y/N)','전대유형(finance/operating)','전대시작일','비고'
+    ];
+
+    const rows = [
+      ['자동생성',1,'부동산','본사 빌딩','재무팀','서울 강남구','2024-01-01','2026-12-31',36,5000000,1,'선급',3.5,0,100000,0,0,'N','','',0,0,0,0,'N','','','']
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '리스 입력 템플릿');
+    XLSX.writeFile(wb, 'IFRS16_리스입력_템플릿.xlsx');
+  };
+
+  const exportBackup = () => {
+    try {
+      const masterData = leases.map(l => ({
+        '리스ID': l.lease_id, '버전': l.version, '상태': l.status === 'active' ? '활성' : '대체됨',
+        '구분': l.assetCategory, '리스명': l.leaseName, '부서': l.department, '자산세부내역': l.assetDetail,
+        '시작일': l.startDate, '종료일': l.endDate, '계약월수': l.leaseTerm,
+        '회차별리스료': parseFloat(l.monthlyPayment), '납부주기월수': l.paymentFrequency,
+        '납부방식': l.paymentTiming === 'prepaid' ? '선급' : '후급',
+        '증분차입이자율(%)': parseFloat(l.ibrRate),
+        '선급리스료': parseFloat(l.prepaidLease), '초기직접원가': parseFloat(l.initialDirectCost),
+        '리스인센티브': parseFloat(l.leaseIncentive), '잔존가치보증': parseFloat(l.residualValue),
+        '변경계약': l.isModification ? 'Y' : 'N',
+        '부모리스ID': l.parentLeaseId || '', '부모버전': l.parentVersion || 0,
+        '이월부채': parseFloat(l.carriedOverLiability || 0),
+        '이월자산': parseFloat(l.carriedOverROU || 0),
+        '이월취득가액': parseFloat(l.carriedOverAssetCost || 0),
+        '이월감가상각누계액': parseFloat(l.carriedOverAccumDepreciation || 0),
+        '전대리스여부': l.isSublease ? 'Y' : 'N',
+        '전대유형': l.subleaseType || '',
+        '전대시작일': l.subleaseStartDate || '',
+        '비고': l.notes || ''
+      }));
+
+      const ws1 = XLSX.utils.json_to_sheet(masterData);
+      const ws2 = XLSX.utils.json_to_sheet(activeLeases.map(l => {
+        const c = l.calculatedData;
+        return {
+          '리스ID': l.lease_id, '리스명': l.leaseName,
+          '초기부채': c?.initialLiability || 0,
+          '초기자산': c?.initialROU || 0,
+          '월감가상각': c?.monthlyDepreciation || 0
         };
-        reader.readAsText(file);
-      };
-      input.click();
-    };
+      }));
+      const ws3 = XLSX.utils.aoa_to_sheet([
+        ['백업일시', new Date().toISOString()],
+        ['총 리스 수', leases.length],
+        ['활성 리스 수', activeLeases.length]
+      ]);
 
-    document.getElementById('searchInput').oninput = (e) => {
-      searchTerm = e.target.value;
-      renderLeaseList();
-    };
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws1, '리스 마스터');
+      XLSX.utils.book_append_sheet(wb, ws2, '초기측정');
+      XLSX.utils.book_append_sheet(wb, ws3, '메타데이터');
+      XLSX.writeFile(wb, `IFRS16_백업_${new Date().toISOString().split('T')[0]}.xlsx`);
+      alert('✅ 백업 완료!');
+    } catch(err) {
+      alert(`백업 실패: ${err.message}`);
+    }
+  };
 
-    document.getElementById('filterSelect').onchange = (e) => {
-      filterCategory = e.target.value;
-      renderLeaseList();
-    };
+  const importExcel = (e) => {
+    const file = e.target.files[0]; 
+    if(!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(ev.target.result, {type:'binary'});
+        const isBackup = wb.SheetNames.includes('메타데이터') && wb.SheetNames.includes('초기측정');
 
-    document.getElementById('compareSelect').onchange = (e) => {
-      const vKey = +e.target.value;
-      if (!vKey || !selectedKey) {
-        document.getElementById('deltaResult').classList.add('hidden');
-        return;
+        if (isBackup) {
+          const masterRows = XLSX.utils.sheet_to_json(wb.Sheets['리스 마스터']);
+          if (!window.confirm(`백업 복원: ${masterRows.length}건\n기존 데이터 초기화 후 복원?`)) { 
+            e.target.value=''; 
+            return; 
+          }
+
+          const restored = masterRows.map(m => {
+            return {
+              lease_id: m['리스ID'], version: m['버전'],
+              status: m['상태']==='활성'?'active':'superseded',
+              assetCategory: m['구분'], leaseName: m['리스명'],
+              department: String(m['부서']||''), assetDetail: String(m['자산세부내역']||''),
+              startDate: parseDate(m['시작일']), endDate: parseDate(m['종료일']),
+              leaseTerm: m['계약월수'] ? String(m['계약월수']) : '',
+              monthlyPayment: String(m['회차별리스료']||0),
+              paymentFrequency: parseInt(m['납부주기월수']||1),
+              paymentTiming: m['납부방식']==='후급'?'postpaid':'prepaid',
+              ibrRate: String(m['증분차입이자율(%)']||0),
+              isModification: m['변경계약']==='Y',
+              parentLeaseId: String(m['부모리스ID']||''), parentVersion: Number(m['부모버전'])||0,
+              carriedOverLiability: String(m['이월부채']||''), carriedOverROU: String(m['이월자산']||''),
+              carriedOverAssetCost: String(m['이월취득가액']||''), carriedOverAccumDepreciation: String(m['이월감가상각누계액']||''),
+              prepaidLease: String(m['선급리스료']||'0'), initialDirectCost: String(m['초기직접원가']||'0'),
+              leaseIncentive: String(m['리스인센티브']||'0'), residualValue: String(m['잔존가치보증']||'0'),
+              isSublease: m['전대리스여부']==='Y', 
+              subleaseType: m['전대유형']||'finance', 
+              subleaseStartDate: parseDate(m['전대시작일'])||'',
+              notes: String(m['비고']||''),
+              calculatedData: null 
+            };
+          });
+          const computed = restored.map(l => ({...l, calculatedData: computeLease(l)}));
+          setLeases(computed);
+          alert(`✅ 백업 복원 완료! ${computed.length}건`);
+        } else {
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+          const newLeases = [];
+          
+          rows.forEach(row => {
+            if (!row['리스명']) return;
+            
+            const isMod = String(row['변경계약(Y/N)']||'').toUpperCase()==='Y';
+            const isSub = String(row['전대리스여부(Y/N)']||'').toUpperCase()==='Y';
+            
+            const lease = {
+              lease_id: (row['리스ID'] && row['리스ID']!=='자동생성') 
+                ? String(row['리스ID']) 
+                : genLeaseId(String(row['구분']||'부동산'), [...leases,...newLeases]),
+              version: Number(row['버전'])||1, 
+              status:'active',
+              assetCategory: String(row['구분']||'부동산'), 
+              leaseName: String(row['리스명']),
+              department: String(row['제출부서']||''), 
+              assetDetail: String(row['자산세부내역']||''),
+              startDate: parseDate(row['리스시작일']), 
+              endDate: parseDate(row['리스종료일']),
+              leaseTerm: row['계약월수'] ? String(row['계약월수']) : '', 
+              monthlyPayment: String(row['회차별리스료']||0),
+              paymentFrequency: parseInt(row['납부주기월수']||1),
+              paymentTiming: String(row['납부방식']||'').includes('후급')?'postpaid':'prepaid',
+              ibrRate: String(row['증분차입이자율(%)']||0),
+              isModification: isMod,
+              parentLeaseId: String(row['부모리스ID']||''), 
+              parentVersion: Number(row['부모버전'])||0,
+              carriedOverLiability: String(row['이월부채']||''), 
+              carriedOverROU: String(row['이월자산']||''),
+              carriedOverAssetCost: String(row['이월취득가액']||''), 
+              carriedOverAccumDepreciation: String(row['이월감가상각누계액']||''),
+              prepaidLease: String(row['선급리스료']||'0'), 
+              initialDirectCost: String(row['초기직접원가']||'0'),
+              leaseIncentive: String(row['리스인센티브']||'0'), 
+              residualValue: String(row['잔존가치보증']||'0'),
+              isSublease: isSub, 
+              subleaseType: row['전대유형(finance/operating)'] || 'finance', 
+              subleaseStartDate: parseDate(row['전대시작일']) || '',
+              notes: String(row['비고']||''), 
+              calculatedData: null
+            };
+            
+            lease.calculatedData = computeLease(lease);
+            if (lease.calculatedData.error) {
+              console.warn(`스킵: ${lease.leaseName} - ${lease.calculatedData.error}`);
+              return;
+            }
+            newLeases.push(lease);
+          });
+
+          if (newLeases.length === 0) {
+            alert('⚠️ 유효한 데이터가 없습니다.');
+            e.target.value='';
+            return;
+          }
+
+          setLeases(prev => [...prev, ...newLeases]);
+          alert(`✅ ${newLeases.length}건 추가 완료!`);
+        }
+        e.target.value='';
+      } catch(err) {
+        alert(`업로드 실패: ${err.message}`);
+        e.target.value='';
       }
-
-      const curr = leases.find(l => l.key === selectedKey);
-      const ver = curr?.versions?.find(v => v.versionKey === vKey);
-      if (!curr || !ver) {
-        document.getElementById('deltaResult').classList.add('hidden');
-        return;
-      }
-
-      const prev = { ...curr, ...ver.snapshot };
-      const delta = calcDelta(prev, curr);
-
-      if (delta) {
-        document.getElementById('deltaResult').classList.remove('hidden');
-        document.getElementById('deltaResult').innerHTML = `
-          <div style="font-size: 13px; margin-bottom: 4px;">사용권자산 증감: <strong>${fmt(delta.rou)}</strong></div>
-          <div style="font-size: 13px; margin-bottom: 4px;">리스부채 증감: <strong>${fmt(delta.lease_liability)}</strong></div>
-          <div style="font-size: 13px;">총 이자비용 증감: <strong>${fmt(delta.totalInt)}</strong></div>
-        `;
-      } else {
-        document.getElementById('deltaResult').classList.add('hidden');
-      }
     };
+    reader.readAsBinaryString(file);
+  };
 
-    window.restoreVersion = (vKey) => {
-      if (!selectedKey) return;
-      const lease = leases.find(l => l.key === selectedKey);
-      if (!lease) return;
-      const ver = lease.versions?.find(v => v.versionKey === vKey);
-      if (!ver) return;
-      if (!confirm(`"${ver.description}" 버전으로 복원하시겠습니까?`)) return;
+  // 🆕 결산 보고서 데이터 생성
+  const annualReport = useMemo(() => 
+    generateAnnualReport(leases, fiscalYear), 
+    [leases, fiscalYear]
+  );
 
-      const idx = leases.findIndex(l => l.key === selectedKey);
-      if (idx < 0) return;
+  // 사용 가능한 연도 목록
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    leases.forEach(l => {
+      if (l.startDate) {
+        const year = new Date(l.startDate).getFullYear();
+        years.add(year);
+        years.add(year + 1);
+        years.add(year + 2);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [leases]);
 
-      const restored = { ...lease, ...ver.snapshot };
-      leases[idx] = restored;
-      saveLeases();
-      renderDetail();
-      alert('복원되었습니다');
-    };
+  return (
+    <div className="min-h-screen bg-slate-900 text-white p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-2xl mb-4">
+          <h1 className="text-3xl font-bold">IFRS 16 리스 계산기 v5.0</h1>
+          <p className="text-blue-100 text-sm mt-1">📉 결산 보고서 기능 추가 (Roll-forward 자동 집계)</p>
+        </div>
 
-    // Initialize
-    loadLeases();
-  </script>
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+            <div className="text-slate-500 text-xs">등록 리스</div>
+            <div className="text-xl font-bold">{activeLeases.length} <span className="text-xs text-slate-600">활성 / {leases.length} 전체</span></div>
+          </div>
+          <div className="bg-slate-800 p-3 rounded-lg border border-blue-900">
+            <div className="text-blue-400 text-xs">총 리스부채 (활성)</div>
+            <div className="text-lg font-bold">₩{fmt(totalLiab)}</div>
+          </div>
+          <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+            <div className="text-slate-500 text-xs">리스 그룹</div>
+            <div className="text-xl font-bold">{Object.keys(leaseGroups).length} <span className="text-xs text-slate-600">건</span></div>
+          </div>
+          <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col gap-1 justify-center">
+            <button onClick={downloadTemplate} className="bg-indigo-600 hover:bg-indigo-700 py-1.5 rounded text-xs transition">템플릿</button>
+            <label className="bg-slate-700 hover:bg-slate-600 py-1.5 rounded text-center text-xs cursor-pointer transition">
+              엑셀 업로드
+              <input type="file" onChange={importExcel} className="hidden" accept=".xlsx"/>
+            </label>
+            <button onClick={exportBackup} className="bg-green-700 hover:bg-green-800 py-1.5 rounded text-xs transition">백업</button>
+            <button onClick={clearAllData} className="bg-red-900 hover:bg-red-800 py-1.5 rounded text-xs transition">전체 초기화</button>
+          </div>
+        </div>
+
+        <div className="flex gap-0.5 mb-3 border-b border-slate-700">
+          {[
+            {id:'input',label:'📝 입력'},
+            {id:'list',label:'📋 목록'},
+            {id:'calculation',label:'📊 계산'},
+            {id:'comparison',label:'🔄 차액'},
+            {id:'annual',label:'📉 결산보고서'}
+          ].map(t => (
+            <button key={t.id} onClick={()=>setActiveTab(t.id)}
+              className={`px-4 py-2 text-sm rounded-t-lg transition ${activeTab===t.id?'text-blue-400 border-b-2 border-blue-400 bg-slate-800':'text-slate-500 hover:text-slate-300'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab==='input' && (
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+            <div className={`p-3 rounded-lg border cursor-pointer transition ${modMode?'bg-yellow-900/20 border-yellow-700':'bg-slate-700/30 border-slate-600'}`}
+              onClick={()=>toggleModMode(!modMode)}>
+              <div className="flex items-center gap-2">
+                <div className={`w-10 h-5 rounded-full relative transition ${modMode?'bg-yellow-600':'bg-slate-600'}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${modMode?'left-5':'left-0.5'}`}/>
+                </div>
+                <span className="font-semibold">기존 리스 변경 등록</span>
+                {modMode && <span className="text-xs bg-yellow-700 text-yellow-100 px-1.5 py-0.5 rounded">활성</span>}
+              </div>
+            </div>
+
+            {modMode && (
+              <div className="bg-yellow-900/15 border border-yellow-700/40 rounded-lg p-4 space-y-3">
+                <div className="text-yellow-300 font-semibold text-sm">📌 변경 대상 리스 선택</div>
+                {activeLeases.length===0
+                  ? <div className="text-slate-600 text-sm">활성 리스가 없습니다.</div>
+                  : <div className="space-y-1.5">{activeLeases.map(l => (
+                    <button key={`${l.lease_id}-v${l.version}`} onClick={()=>selectParent(l)}
+                      className={`w-full text-left p-2.5 rounded-lg border transition text-sm ${selParent && selParent.lease_id===l.lease_id?'border-yellow-500 bg-yellow-900/30':'border-slate-600 bg-slate-700/40 hover:border-slate-500'}`}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">{l.leaseName}</span>
+                        <span className="text-xs text-slate-400 font-mono">{l.lease_id} v{l.version}</span>
+                      </div>
+                      <div className="text-xs text-slate-500">{l.startDate} ~ {l.endDate} | ₩{fmt(parseFloat(l.monthlyPayment))}/회</div>
+                    </button>
+                  ))}</div>
+                }
+                {selParent && (
+                  <>
+                    <div className="text-xs text-slate-500 mt-1">👇 변경일(시작일) 입력 후 📍잔액 조회 클릭</div>
+                    <button onClick={fetchBalanceAtDate} 
+                      className="w-full bg-yellow-700 hover:bg-yellow-600 py-2 rounded text-sm font-semibold transition">
+                      📍 변경 전일 잔액 조회
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {key:'carriedOverLiability',label:'이월 리스부채 *'},
+                        {key:'carriedOverROU',label:'이월 사용권자산 *'}
+                      ].map(({key,label})=>(
+                        <div key={key}>
+                          <label className="block text-xs text-yellow-400 mb-0.5">{label}</label>
+                          <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm"
+                            value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">자산 구분</label>
+                <select className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.assetCategory} onChange={e=>setForm({...form,assetCategory:e.target.value})}>
+                  <option>부동산</option><option>차량운반구</option><option>기계장치</option><option>비품</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">리스명 *</label>
+                <input className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.leaseName} onChange={e=>setForm({...form,leaseName:e.target.value})} placeholder="예: 본사 3층"/>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">리스 시작일 *</label>
+                <div className="space-y-1">
+                  <input type="date" className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm" value={form.startDate} onChange={e=>setForm({...form,startDate:e.target.value})}/>
+                  <div className="flex gap-1 text-xs">
+                    <button onClick={()=>setStartPreset('y')} className="bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600">올해1/1</button>
+                    <button onClick={()=>setStartPreset('m')} className="bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600">이달1일</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">리스 종료일</label>
+                <input type="date" className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm" value={form.endDate} onChange={e=>setForm({...form,endDate:e.target.value})}/>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">계약 월수 (직접 입력)</label>
+                <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.leaseTerm} onChange={e=>setForm({...form,leaseTerm:e.target.value})} placeholder="미입력 시 날짜로 계산"/>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">회차별 리스료 *</label>
+                <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.monthlyPayment} onChange={e=>setForm({...form,monthlyPayment:e.target.value})} placeholder="예: 5000000"/>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">납부 주기</label>
+                <select className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.paymentFrequency} onChange={e=>setForm({...form,paymentFrequency:parseInt(e.target.value)})}>
+                  {FREQ_OPTIONS.map(f => <option key={f.v} value={f.v}>{f.l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">납부 방식</label>
+                <select className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.paymentTiming} onChange={e=>setForm({...form,paymentTiming:e.target.value})}>
+                  <option value="prepaid">선급 (기초)</option>
+                  <option value="postpaid">후급 (기말)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-0.5">증분차입이자율 (%)</label>
+                <input type="number" step="0.01" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" value={form.ibrRate} onChange={e=>setForm({...form,ibrRate:e.target.value})} placeholder="예: 3.5"/>
+              </div>
+            </div>
+
+            <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-600">
+              <div className="text-xs text-slate-400 mb-2 font-semibold">추가 항목 (선택)</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  {key:'prepaidLease',label:'선급리스료'},
+                  {key:'initialDirectCost',label:'초기직접원가'},
+                  {key:'leaseIncentive',label:'리스인센티브'},
+                  {key:'residualValue',label:'잔존가치보증'}
+                ].map(({key,label})=>(
+                  <div key={key}>
+                    <label className="block text-slate-500 mb-0.5">{label}</label>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm"
+                      value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-2 mb-2">
+                <input type="checkbox" checked={form.isSublease} onChange={e=>setForm({...form,isSublease:e.target.checked})}
+                  className="w-4 h-4"/>
+                <span className="text-xs font-semibold">전대리스 (Sublease)</span>
+              </div>
+              {form.isSublease && (
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="block text-slate-500 mb-0.5">전대 유형</label>
+                    <select className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm"
+                      value={form.subleaseType} onChange={e=>setForm({...form,subleaseType:e.target.value})}>
+                      <option value="finance">금융리스</option>
+                      <option value="operating">운용리스</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 mb-0.5">전대 시작일</label>
+                    <input type="date" className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-sm"
+                      value={form.subleaseStartDate} onChange={e=>setForm({...form,subleaseStartDate:e.target.value})}/>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-0.5">비고</label>
+              <textarea className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm" rows="2"
+                value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
+            </div>
+
+            <button onClick={handleSubmit}
+              className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg text-lg font-bold transition">
+              {modMode ? '🔄 변경 리스 등록' : '➕ 신규 리스 등록'}
+            </button>
+          </div>
+        )}
+
+        {activeTab==='list' && (
+          <div className="space-y-2">
+            {activeLeases.length === 0 
+              ? <div className="bg-slate-800 rounded-xl border border-slate-700 p-10 text-center text-slate-600">등록된 리스가 없습니다.</div>
+              : activeLeases.map(l => (
+                <div key={`${l.lease_id}-v${l.version}`} className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold">{l.leaseName}</span>
+                        <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded">{l.assetCategory}</span>
+                        {l.isModification && <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded">변경</span>}
+                        {l.isSublease && <span className="text-xs bg-orange-900 text-orange-300 px-2 py-0.5 rounded">전대</span>}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5 font-mono">{l.lease_id} v{l.version}</div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={()=>setSelectedLease(l)} className="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded text-xs transition">상세</button>
+                      <button onClick={()=>deleteLease(l.lease_id, l.version)} className="bg-red-800 hover:bg-red-700 px-3 py-1 rounded text-xs transition">삭제</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div><span className="text-slate-500">기간:</span> {l.startDate} ~ {l.endDate}</div>
+                    <div><span className="text-slate-500">월수:</span> {l.calculatedData?.months || 0}개월</div>
+                    <div><span className="text-slate-500">리스료:</span> ₩{fmt(parseFloat(l.monthlyPayment))}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {activeTab==='calculation' && (() => {
+          const lease = selectedLease || activeLeases[0];
+          if (!lease) return <div className="bg-slate-800 rounded-xl border border-slate-700 p-10 text-center text-slate-600">계산할 리스를 선택하세요</div>;
+          
+          const calc = lease.calculatedData;
+          if (!calc) return <div className="bg-slate-800 rounded-xl border border-slate-700 p-10 text-center text-slate-600">계산 데이터가 없습니다</div>;
+          if (calc.error) return <div className="bg-red-900/20 border border-red-700 rounded-xl p-10 text-center text-red-400">{calc.error}</div>;
+
+          return (
+            <div className="space-y-4">
+              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-xl font-bold">{lease.leaseName}</div>
+                    <div className="text-xs text-slate-400 font-mono">{lease.lease_id} v{lease.version}</div>
+                  </div>
+                  <select className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm"
+                    value={selectedLease?.lease_id || lease.lease_id}
+                    onChange={e => {
+                      const l = activeLeases.find(x => x.lease_id === e.target.value);
+                      setSelectedLease(l);
+                    }}>
+                    {activeLeases.map(l => <option key={`${l.lease_id}-v${l.version}`} value={l.lease_id}>{l.leaseName} ({l.lease_id} v{l.version})</option>)}
+                  </select>
+                </div>
+
+                {lease.isModification && (
+                   <div className="bg-yellow-900/20 border border-yellow-700 p-3 rounded-lg mb-3">
+                     <div className="text-xs text-yellow-300 font-semibold mb-1.5">🔄 변경 계약 정보</div>
+                     <div className="grid grid-cols-2 gap-2 text-xs">
+                       <div><span className="text-slate-500">부모 리스:</span> {lease.parentLeaseId} v{lease.parentVersion}</div>
+                       <div><span className="text-slate-500">변경일:</span> {lease.startDate}</div>
+                       <div><span className="text-slate-500">이월 부채:</span> ₩{fmt(parseFloat(lease.carriedOverLiability||0))}</div>
+                       <div><span className="text-slate-500">이월 자산:</span> ₩{fmt(parseFloat(lease.carriedOverROU||0))}</div>
+                     </div>
+                   </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-slate-800 p-3 rounded-lg border border-blue-900"><div className="text-blue-400 text-xs">초기 리스부채</div><div className="text-lg font-bold">₩{fmt(calc.initialLiability)}</div></div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-purple-900"><div className="text-purple-400 text-xs">초기 사용권자산</div><div className="text-lg font-bold">₩{fmt(calc.initialROU)}</div></div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700"><div className="text-slate-400 text-xs">취득가액</div><div className="text-lg font-bold">₩{fmt(calc.assetCost)}</div></div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-orange-900"><div className="text-orange-400 text-xs">월 감가상각비</div><div className="text-lg font-bold">₩{fmt(calc.monthlyDepreciation)}</div></div>
+              </div>
+
+              {calc.cashFlows && calc.cashFlows.length > 0 && (
+                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                  <div className="p-2.5 border-b border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700/30"
+                    onClick={() => setShowCashFlows(!showCashFlows)}>
+                    <span className="text-xs font-semibold text-slate-400">💵 현금흐름 검증</span>
+                    <span className="text-xs text-slate-500">{showCashFlows ? '▼' : '▶'}</span>
+                  </div>
+                  {showCashFlows && (
+                    <div className="p-3">
+                      <table className="w-full text-xs">
+                        <thead className="bg-slate-700/50 text-slate-400">
+                          <tr><th className="p-1.5 text-center">순번</th><th className="p-1.5">일자</th><th className="p-1.5 text-right">현금흐름</th><th className="p-1.5">설명</th></tr>
+                        </thead>
+                        <tbody>
+                          {calc.cashFlows.map((cf, i) => (
+                            <tr key={i} className="border-t border-slate-700/30">
+                              <td className="p-1.5 text-center text-slate-500">{cf.seq}</td>
+                              <td className="p-1.5 font-mono">{cf.date}</td>
+                              <td className="p-1.5 text-right">{cf.amount > 0 ? '₩'+fmt(cf.amount) : '-'}</td>
+                              <td className="p-1.5 text-slate-500">{cf.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {calc.isFinanceSublease && calc.subleaseSchedule && calc.subleaseSchedule.length > 0 && (
+                <div className="bg-slate-800 rounded-xl border border-orange-700 overflow-hidden">
+                  <div className="p-2.5 border-b border-orange-700 text-xs font-semibold text-orange-300">
+                    🔄 전대리스 채권 스케줄
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-right">
+                      <thead className="bg-orange-900/20 text-orange-300">
+                        <tr><th className="p-1.5 text-center">회차</th><th className="p-1.5">날짜</th><th className="p-1.5">기초채권</th><th className="p-1.5">이자수익</th><th className="p-1.5">수취</th><th className="p-1.5">원금회수</th><th className="p-1.5">기말채권</th></tr>
+                      </thead>
+                      <tbody>
+                        {calc.subleaseSchedule.map((row, i) => (
+                          <tr key={i} className="border-t border-orange-700/20">
+                            <td className="p-1.5 text-center text-slate-500">{row.seq}</td>
+                            <td className="p-1.5 text-center font-mono">{row.date}</td>
+                            <td className="p-1.5">₩{fmt(row.beginReceivable)}</td>
+                            <td className="p-1.5 text-green-400">₩{fmt(row.interestIncome)}</td>
+                            <td className="p-1.5">₩{fmt(row.collection)}</td>
+                            <td className="p-1.5 text-blue-400">₩{fmt(row.principalCollection)}</td>
+                            <td className="p-1.5 text-orange-300 font-bold">₩{fmt(row.endReceivable)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <div className="p-2.5 border-b border-slate-700 text-xs font-semibold text-slate-400">
+                  📊 상각 스케줄
+                </div>
+                <div className="overflow-x-auto" style={{maxHeight:'400px'}}>
+                  <table className="w-full text-xs text-right">
+                    <thead className="bg-slate-700 text-slate-400" style={{position:'sticky',top:0}}>
+                      <tr><th className="p-1.5 text-center">회차</th><th className="p-1.5 text-center">날짜</th><th className="p-1.5">기초부채</th><th className="p-1.5">이자비용</th><th className="p-1.5">지급액</th><th className="p-1.5">원금</th><th className="p-1.5">기말부채</th><th className="p-1.5">감가상각</th><th className="p-1.5">장부가액</th></tr>
+                    </thead>
+                    <tbody>{calc.schedule.map((r,i)=>(
+                      <tr key={i} className={`border-t border-slate-700/40 hover:bg-slate-700/20 ${r.isSubleasePeriod?'opacity-50':''}`}>
+                        <td className="p-1.5 text-center text-slate-500">{r.period}</td>
+                        <td className="p-1.5 text-center text-slate-500">{r.paymentDate}</td>
+                        <td className="p-1.5">{fmt(r.beginLiability)}</td>
+                        <td className="p-1.5 text-orange-400">{fmt(r.interest)}</td>
+                        <td className="p-1.5">{fmt(r.payment)}</td>
+                        <td className="p-1.5 text-blue-400">{fmt(r.principal)}</td>
+                        <td className="p-1.5 text-blue-300">{fmt(r.endLiability)}</td>
+                        <td className="p-1.5 text-purple-400">{r.isSubleasePeriod?'-':fmt(r.monthlyDepreciation)}</td>
+                        <td className="p-1.5 text-cyan-400 font-bold">{r.isSubleasePeriod?<span className="text-[10px]">제거</span>:fmt(r.netBookValue)}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {activeTab==='comparison' && (() => {
+          const multiVer = Object.entries(leaseGroups).filter(([,v])=>v.length>1);
+          const curId = cmpId || multiVer[0]?.[0];
+          const diffs = curId ? calcDiff(curId) : [];
+
+          return (
+            <div className="space-y-4">
+              {multiVer.length===0
+                ? <div className="bg-slate-800 rounded-xl border border-slate-700 p-10 text-center text-slate-600">변경 이력 없음</div>
+                : (<>
+                  <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <div className="text-xs text-slate-500 mb-1.5">비교 대상</div>
+                    <div className="flex gap-2 flex-wrap">{multiVer.map(([id,vers])=>(
+                      <button key={id} onClick={()=>setCmpId(id)}
+                        className={`px-2.5 py-1.5 rounded-lg text-sm border transition ${curId===id?'bg-yellow-900/30 border-yellow-600':'bg-slate-700 border-slate-600 hover:border-slate-500'}`}>
+                        <span className="font-mono text-xs mr-1.5">{id}</span>
+                        {vers.find(v=>v.status==='active')?.leaseName}
+                        <span className="text-slate-500 text-xs ml-1.5">({vers.length}ver)</span>
+                      </button>
+                    ))}</div>
+                  </div>
+                  {diffs.map((d,idx)=>(
+                    <div key={idx} className="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm font-bold">변경 {idx+1}차</span>
+                        <span className="text-xs bg-slate-600 px-2 py-0.5 rounded">v{d.v1.version} → v{d.v2.version}</span>
+                        <span className="text-xs text-slate-500">변경일: {d.modDate}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-900/15 border border-blue-800/50 p-3 rounded-lg">
+                          <div className="text-xs text-blue-400 mb-1 font-semibold">리스부채</div>
+                          <div className="flex justify-between text-sm"><span>구:</span><span>₩{fmt(d.liabBefore)}</span></div>
+                          <div className="flex justify-between text-sm"><span>신:</span><span>₩{fmt(d.liabAfter)}</span></div>
+                          <div className={`flex justify-between font-bold text-sm ${d.liabDiff>=0?'text-red-400':'text-green-400'}`}><span>차액:</span><span>₩{fmt(d.liabDiff)}</span></div>
+                        </div>
+                        <div className="bg-purple-900/15 border border-purple-800/50 p-3 rounded-lg">
+                          <div className="text-xs text-purple-400 mb-1 font-semibold">사용권자산</div>
+                          <div className="flex justify-between text-sm"><span>구:</span><span>₩{fmt(d.rouBefore)}</span></div>
+                          <div className="flex justify-between text-sm"><span>신:</span><span>₩{fmt(d.rouAfter)}</span></div>
+                          <div className={`flex justify-between font-bold text-sm ${d.rouDiff>=0?'text-red-400':'text-green-400'}`}><span>차액:</span><span>₩{fmt(d.rouDiff)}</span></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>)
+              }
+            </div>
+          );
+        })()}
+
+        {/* 🆕 결산 보고서 탭 */}
+        {activeTab==='annual' && (
+          <div className="space-y-4">
+            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">결산 연도 선택</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">해당 연도의 기초/기말 잔액 및 증감 내역을 자동으로 집계합니다</p>
+                </div>
+                <select 
+                  className="bg-slate-700 border border-slate-600 rounded px-4 py-2 text-sm font-mono"
+                  value={fiscalYear}
+                  onChange={e => setFiscalYear(parseInt(e.target.value))}>
+                  {availableYears.length === 0 ? (
+                    <option>{new Date().getFullYear()}</option>
+                  ) : (
+                    availableYears.map(y => <option key={y} value={y}>{y}년</option>)
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {Object.keys(annualReport).length === 0 ? (
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-10 text-center text-slate-600">
+                {fiscalYear}년에 활성 리스가 없습니다
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(annualReport).map(([category, data]) => (
+                  <div key={category} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-900 to-purple-900 p-3 border-b border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold">{category}</h3>
+                        <div className="flex gap-3 text-xs">
+                          <span className="bg-green-900/30 text-green-300 px-2 py-1 rounded">신규 {data.newLeases}건</span>
+                          <span className="bg-blue-900/30 text-blue-300 px-2 py-1 rounded">기존 {data.existingLeases}건</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                      {/* 리스부채 Roll-forward */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">📊 리스부채 증감표</h4>
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-700/50 text-slate-300">
+                            <tr>
+                              <th className="p-2 text-left">구분</th>
+                              <th className="p-2 text-right">기초금액</th>
+                              <th className="p-2 text-right">증가</th>
+                              <th className="p-2 text-right">이자비용</th>
+                              <th className="p-2 text-right">감소(상환)</th>
+                              <th className="p-2 text-right">기말금액</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-t border-slate-700/30">
+                              <td className="p-2 font-medium">리스부채</td>
+                              <td className="p-2 text-right font-mono">₩{fmt(data.liability.begin)}</td>
+                              <td className="p-2 text-right font-mono text-green-400">₩{fmt(data.liability.increase)}</td>
+                              <td className="p-2 text-right font-mono text-orange-400">₩{fmt(data.liability.interest)}</td>
+                              <td className="p-2 text-right font-mono text-red-400">₩{fmt(data.liability.decrease)}</td>
+                              <td className="p-2 text-right font-mono font-bold text-blue-300">₩{fmt(data.liability.end)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* 사용권자산 Roll-forward */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-purple-400 mb-2">📊 사용권자산 증감표</h4>
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-700/50 text-slate-300">
+                            <tr>
+                              <th className="p-2 text-left">구분</th>
+                              <th className="p-2 text-right">기초금액</th>
+                              <th className="p-2 text-right">증가</th>
+                              <th className="p-2 text-right">감가상각</th>
+                              <th className="p-2 text-right">감소</th>
+                              <th className="p-2 text-right">기말금액</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-t border-slate-700/30">
+                              <td className="p-2 font-medium">사용권자산</td>
+                              <td className="p-2 text-right font-mono">₩{fmt(data.rou.begin)}</td>
+                              <td className="p-2 text-right font-mono text-green-400">₩{fmt(data.rou.increase)}</td>
+                              <td className="p-2 text-right font-mono text-purple-400">₩{fmt(data.rou.depreciation)}</td>
+                              <td className="p-2 text-right font-mono text-red-400">₩{fmt(data.rou.decrease)}</td>
+                              <td className="p-2 text-right font-mono font-bold text-purple-300">₩{fmt(data.rou.end)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
 </body>
 </html>
