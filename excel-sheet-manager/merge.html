@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엑셀 시트 병합 도구</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #eef1ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e0e7ff;
+            border-color: #4f46e5;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .file-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .sheet-list {
+            margin-top: 20px;
+        }
+
+        .sheet-list-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .sheet-item {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .sheet-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .sheet-item.selected {
+            border-color: #667eea;
+            background: #eef1ff;
+        }
+
+        .sheet-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .sheet-name {
+            flex: 1;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .sheet-info {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .select-all-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+
+        .select-all-btn:hover {
+            background: #5568d3;
+        }
+
+        .options {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .options.show {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .merge-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .merge-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .merge-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .clear-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #4b5563;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 엑셀 시트 병합 도구</h1>
+        <p class="subtitle">하나의 엑셀 파일 내 여러 시트를 하나의 시트로 합칩니다</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p style="color: #667eea; font-weight: 600; margin-bottom: 5px;">엑셀 파일을 선택하세요</p>
+            <p style="color: #999; font-size: 13px;">Excel 파일 (.xlsx, .xls) 지원</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="sheet-list">
+                <button class="select-all-btn" id="selectAllBtn">전체 선택</button>
+                <div class="sheet-list-title">병합할 시트를 선택하세요:</div>
+                <div id="sheetList"></div>
+            </div>
+        </div>
+
+        <div class="options" id="options">
+            <div class="option-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="addSheetName" checked>
+                    각 시트의 출처를 표시하는 열 추가
+                </label>
+            </div>
+            <div class="option-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="keepHeaders">
+                    각 시트마다 헤더 행 유지 (체크 해제 시 첫 번째 시트의 헤더만 사용)
+                </label>
+            </div>
+            <div class="option-group">
+                <label>병합된 시트 이름:</label>
+                <input type="text" id="mergedSheetName" value="병합된데이터" placeholder="시트 이름 입력">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="merge-btn" id="mergeBtn" disabled>시트 병합하기</button>
+            <button class="clear-btn" id="clearBtn">초기화</button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentWorkbook = null;
+        let currentFile = null;
+        let selectedSheets = new Set();
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const sheetList = document.getElementById('sheetList');
+        const options = document.getElementById('options');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const status = document.getElementById('status');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showStatus('error', '엑셀 파일만 업로드 가능합니다.');
+                return;
+            }
+
+            currentFile = file;
+            showStatus('processing', '파일을 읽는 중...');
+
+            try {
+                const data = await readFile(file);
+                currentWorkbook = XLSX.read(data, { type: 'array' });
+                
+                fileName.textContent = `📄 ${file.name}`;
+                displaySheets();
+                fileInfo.classList.add('show');
+                options.classList.add('show');
+                hideStatus();
+            } catch (error) {
+                showStatus('error', `파일 읽기 오류: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(new Uint8Array(e.target.result));
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function displaySheets() {
+            sheetList.innerHTML = '';
+            selectedSheets.clear();
+
+            currentWorkbook.SheetNames.forEach((sheetName, index) => {
+                const sheet = currentWorkbook.Sheets[sheetName];
+                const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const rowCount = data.length;
+                const colCount = data[0] ? data[0].length : 0;
+
+                const item = document.createElement('div');
+                item.className = 'sheet-item';
+                item.innerHTML = `
+                    <input type="checkbox" class="sheet-checkbox" id="sheet-${index}" value="${sheetName}">
+                    <label for="sheet-${index}" class="sheet-name">${sheetName}</label>
+                    <span class="sheet-info">${rowCount}행 × ${colCount}열</span>
+                `;
+                
+                const checkbox = item.querySelector('.sheet-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedSheets.add(sheetName);
+                        item.classList.add('selected');
+                    } else {
+                        selectedSheets.delete(sheetName);
+                        item.classList.remove('selected');
+                    }
+                    updateMergeButton();
+                });
+
+                sheetList.appendChild(item);
+            });
+
+            updateMergeButton();
+        }
+
+        selectAllBtn.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.sheet-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                const event = new Event('change');
+                cb.dispatchEvent(event);
+            });
+
+            selectAllBtn.textContent = allChecked ? '전체 선택' : '전체 해제';
+        });
+
+        function updateMergeButton() {
+            mergeBtn.disabled = selectedSheets.size === 0;
+        }
+
+        clearBtn.addEventListener('click', () => {
+            currentWorkbook = null;
+            currentFile = null;
+            selectedSheets.clear();
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+            options.classList.remove('show');
+            sheetList.innerHTML = '';
+            hideStatus();
+            updateMergeButton();
+        });
+
+        mergeBtn.addEventListener('click', () => {
+            if (selectedSheets.size === 0) return;
+
+            showStatus('processing', '시트를 병합하는 중...');
+
+            try {
+                const addSheetName = document.getElementById('addSheetName').checked;
+                const keepHeaders = document.getElementById('keepHeaders').checked;
+                const mergedSheetName = document.getElementById('mergedSheetName').value || '병합된데이터';
+
+                const allData = [];
+                let headers = null;
+                let firstSheet = true;
+
+                selectedSheets.forEach(sheetName => {
+                    const sheet = currentWorkbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    
+                    if (data.length === 0) return;
+
+                    if (firstSheet) {
+                        headers = [...data[0]];
+                        if (addSheetName) {
+                            headers.push('시트명');
+                        }
+                        firstSheet = false;
+                    }
+
+                    if (keepHeaders && !firstSheet) {
+                        const headerRow = [...data[0]];
+                        if (addSheetName) {
+                            headerRow.push(sheetName);
+                        }
+                        allData.push(headerRow);
+                    }
+
+                    for (let i = 1; i < data.length; i++) {
+                        const row = [...data[i]];
+                        if (addSheetName) {
+                            row.push(sheetName);
+                        }
+                        allData.push(row);
+                    }
+                });
+
+                if (allData.length === 0) {
+                    throw new Error('병합할 데이터가 없습니다.');
+                }
+
+                // 새 워크북 생성
+                const newWb = XLSX.utils.book_new();
+                const finalData = [headers, ...allData];
+                const ws = XLSX.utils.aoa_to_sheet(finalData);
+                
+                // 열 너비 자동 조정
+                const colWidths = [];
+                finalData.forEach(row => {
+                    row.forEach((cell, i) => {
+                        const cellLength = cell ? String(cell).length : 10;
+                        colWidths[i] = Math.max(colWidths[i] || 10, cellLength);
+                    });
+                });
+                ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w + 2, 50) }));
+
+                XLSX.utils.book_append_sheet(newWb, ws, mergedSheetName);
+
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const originalName = currentFile.name.replace(/\.(xlsx|xls)$/i, '');
+                XLSX.writeFile(newWb, `${originalName}_병합_${timestamp}.xlsx`);
+
+                showStatus('success', `✓ ${selectedSheets.size}개 시트가 성공적으로 병합되었습니다!`);
+            } catch (error) {
+                showStatus('error', `✗ 오류 발생: ${error.message}`);
+                console.error(error);
+            }
+        });
+
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function hideStatus() {
+            status.className = 'status';
+            status.textContent = '';
+        }
+    </script>
+</body>
+</html>

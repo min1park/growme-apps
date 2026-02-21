@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFRS 16 리스 계산기 v4.0</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 320px;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      background: #f9f9f9;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+    .sidebar-header h2 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+    }
+    .search-input, .filter-select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-primary { background: #007bff; color: #fff; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-warning { background: #ffc107; color: #000; }
+    .btn-danger { background: #dc3545; color: #fff; }
+    .btn-secondary { background: #6c757d; color: #fff; }
+    .btn-info { background: #17a2b8; color: #fff; }
+    .lease-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .lease-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      background: #fff;
+    }
+    .lease-item.active {
+      background: #e3f2fd;
+    }
+    .lease-item-id {
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .lease-item-name {
+      font-size: 12px;
+      color: #666;
+    }
+    .lease-item-cat {
+      font-size: 11px;
+      color: #999;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .empty-state {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+    }
+    .form-section {
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+      overflow-y: auto;
+      max-height: 40vh;
+    }
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .form-header h3 {
+      margin: 0;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-group input[readonly] {
+      background: #f0f0f0;
+    }
+    .full-width {
+      grid-column: span 2;
+    }
+    .history-section {
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      background: #f9f9f9;
+      max-height: 30vh;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .delta-section {
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+    .delta-result {
+      margin-top: 12px;
+      padding: 12px;
+      background: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      border-radius: 4px;
+    }
+    .schedule-section {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .summary-box {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      padding: 8px;
+      text-align: left;
+      background: #f0f0f0;
+      border-bottom: 2px solid #ddd;
+    }
+    th.right, td.right {
+      text-align: right;
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>IFRS 16 리스 계산기 v4.0</h2>
+        <input type="text" class="search-input" id="searchInput" placeholder="검색 (ID/자산명)">
+        <select class="filter-select" id="filterSelect">
+          <option value="">전체</option>
+          <option value="부동산">부동산</option>
+          <option value="차량운반구">차량운반구</option>
+          <option value="기계장치">기계장치</option>
+          <option value="비품">비품</option>
+        </select>
+        <div class="button-group">
+          <button class="btn btn-primary" id="addBtn">+ 추가</button>
+          <button class="btn btn-success" id="excelUploadBtn">엑셀</button>
+          <button class="btn btn-warning" id="backupBtn">백업</button>
+        </div>
+        <button class="btn btn-warning" id="restoreBtn" style="width: 100%; margin-top: 8px;">복구</button>
+      </div>
+      <div class="lease-list" id="leaseList"></div>
+    </div>
+
+    <div class="main-content">
+      <div class="empty-state" id="emptyState">
+        좌측에서 리스를 선택하세요
+      </div>
+
+      <div id="detailView" class="hidden">
+        <div class="form-section">
+          <div class="form-header">
+            <h3>리스 정보</h3>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" id="saveBtn">저장</button>
+              <button class="btn btn-secondary" id="historyBtn">이력</button>
+              <button class="btn btn-danger" id="deleteBtn">삭제</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>리스 ID</label>
+              <input type="text" id="leaseId" readonly>
+            </div>
+            <div class="form-group">
+              <label>분류</label>
+              <select id="category">
+                <option value="부동산">부동산</option>
+                <option value="차량운반구">차량운반구</option>
+                <option value="기계장치">기계장치</option>
+                <option value="비품">비품</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label>자산명</label>
+              <input type="text" id="assetName">
+            </div>
+            <div class="form-group">
+              <label>시작일</label>
+              <input type="date" id="startDate">
+            </div>
+            <div class="form-group">
+              <label>종료일</label>
+              <input type="date" id="endDate">
+            </div>
+            <div class="form-group">
+              <label>월 리스료</label>
+              <input type="number" id="monthlyPayment">
+            </div>
+            <div class="form-group">
+              <label>연 이자율(%)</label>
+              <input type="number" step="0.01" id="annualRate">
+            </div>
+            <div class="form-group">
+              <label>초기 사용권자산</label>
+              <input type="number" id="initialRou">
+            </div>
+            <div class="form-group">
+              <label>지급 시기</label>
+              <select id="paymentTiming">
+                <option value="prepaid">선급</option>
+                <option value="postpaid">후급</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-section hidden" id="historySection">
+          <h4 style="margin: 0 0 12px 0;">버전 이력</h4>
+          <div id="historyList"></div>
+        </div>
+
+        <div class="delta-section">
+          <h4 style="margin: 0 0 12px 0;">변경 차액 계산</h4>
+          <select id="compareSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">비교 대상 선택</option>
+          </select>
+          <div id="deltaResult" class="hidden delta-result"></div>
+        </div>
+
+        <div class="schedule-section">
+          <h4 style="margin: 0 0 12px 0;">상환 스케줄</h4>
+          <div id="summaryBox" class="summary-box"></div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>일자</th>
+                  <th class="right">지급액</th>
+                  <th class="right">이자</th>
+                  <th class="right">원금</th>
+                  <th class="right">잔액</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CAT_PREFIX = { '부동산': 'R', '차량운반구': 'V', '기계장치': 'M', '비품': 'F' };
+    const fmt = (n) => Math.round(n).toLocaleString();
+    const toISO = (d) => {
+      const o = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - o).toISOString().split('T')[0];
+    };
+
+    const genLeaseId = (category, allLeases) => {
+      const prefix = CAT_PREFIX[category] || 'X';
+      const year = new Date().getFullYear();
+      const nums = allLeases
+        .filter(l => l.lease_id && l.lease_id.startsWith(`${prefix}-${year}-`))
+        .map(l => parseInt(l.lease_id.split('-')[2]) || 0);
+      const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+      return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
+    };
+
+    const calcMonths = (s, e) => {
+      if (!s || !e) return 0;
+      const sd = new Date(s), ed = new Date(e);
+      return Math.max(0, (ed.getFullYear()-sd.getFullYear())*12 + (ed.getMonth()-sd.getMonth()) + 1);
+    };
+
+    const getPayDates = (startDate, months, timing) => {
+      const dates = [], s = new Date(startDate);
+      s.setDate(1); s.setHours(0,0,0,0);
+      for (let i = 0; i < months; i++) {
+        const d = new Date(s.getFullYear(), s.getMonth()+i, 1);
+        if (timing === 'postpaid') { d.setMonth(d.getMonth()+1); d.setDate(0); }
+        dates.push(d);
+      }
+      return dates;
+    };
+
+    const computeSchedule = (lease) => {
+      if (!lease.start_date || !lease.end_date) return [];
+      const months = calcMonths(lease.start_date, lease.end_date);
+      const r = (lease.annual_rate || 0) / 100 / 12;
+      const pmt = lease.monthly_payment || 0;
+      const dates = getPayDates(lease.start_date, months, lease.payment_timing || 'prepaid');
+
+      let bal = lease.initial_rou || 0, cumInt = 0, cumPrin = 0;
+      const rows = [];
+
+      for (let i = 0; i < months; i++) {
+        const int = bal * r;
+        const prin = pmt - int;
+        bal -= prin;
+        cumInt += int; cumPrin += prin;
+        rows.push({
+          date: toISO(dates[i]),
+          payment: pmt,
+          interest: int,
+          principal: prin,
+          balance: bal,
+          cumInt, cumPrin
+        });
+      }
+      return rows;
+    };
+
+    const computeReduction = (lease) => {
+      if (!lease.start_date || !lease.end_date) return null;
+      const sch = computeSchedule(lease);
+      if (!sch.length) return null;
+      const totalInt = sch.reduce((s,r)=>s+r.interest,0);
+      const totalPrin = sch.reduce((s,r)=>s+r.principal,0);
+      return {
+        totalInterest: totalInt,
+        totalPrincipal: totalPrin,
+        totalPayment: totalInt + totalPrin,
+        finalBalance: sch[sch.length-1]?.balance || 0
+      };
+    };
+
+    const calcDelta = (prev, curr) => {
+      const p = computeReduction(prev);
+      const c = computeReduction(curr);
+      if (!p || !c) return null;
+      return {
+        rou: (curr.initial_rou||0) - (prev.initial_rou||0),
+        lease_liability: (curr.initial_rou||0) - (prev.initial_rou||0),
+        totalInt: c.totalInterest - p.totalInterest
+      };
+    };
+
+    // State
+    let leases = [];
+    let selectedKey = null;
+    let filterCategory = '';
+    let searchTerm = '';
+
+    // Load from localStorage
+    const loadLeases = () => {
+      const saved = localStorage.getItem('ifrs16_leases');
+      if (saved) leases = JSON.parse(saved);
+      renderLeaseList();
+    };
+
+    const saveLeases = () => {
+      localStorage.setItem('ifrs16_leases', JSON.stringify(leases));
+    };
+
+    const renderLeaseList = () => {
+      let filtered = leases;
+      if (filterCategory) filtered = filtered.filter(l => l.category === filterCategory);
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(l =>
+          (l.lease_id||'').toLowerCase().includes(term) ||
+          (l.asset_name||'').toLowerCase().includes(term)
+        );
+      }
+
+      const list = document.getElementById('leaseList');
+      list.innerHTML = '';
+      filtered.forEach(lease => {
+        const item = document.createElement('div');
+        item.className = 'lease-item' + (selectedKey === lease.key ? ' active' : '');
+        item.innerHTML = `
+          <div class="lease-item-id">${lease.lease_id}</div>
+          <div class="lease-item-name">${lease.asset_name}</div>
+          <div class="lease-item-cat">${lease.category}</div>
+        `;
+        item.onclick = () => selectLease(lease.key);
+        list.appendChild(item);
+      });
+    };
+
+    const selectLease = (key) => {
+      selectedKey = key;
+      renderLeaseList();
+      renderDetail();
+    };
+
+    const renderDetail = () => {
+      const lease = leases.find(l => l.key === selectedKey);
+      if (!lease) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('detailView').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('detailView').classList.remove('hidden');
+
+      document.getElementById('leaseId').value = lease.lease_id || '';
+      document.getElementById('category').value = lease.category || '부동산';
+      document.getElementById('assetName').value = lease.asset_name || '';
+      document.getElementById('startDate').value = lease.start_date || '';
+      document.getElementById('endDate').value = lease.end_date || '';
+      document.getElementById('monthlyPayment').value = lease.monthly_payment || 0;
+      document.getElementById('annualRate').value = lease.annual_rate || 4.5;
+      document.getElementById('initialRou').value = lease.initial_rou || 0;
+      document.getElementById('paymentTiming').value = lease.payment_timing || 'prepaid';
+
+      renderSchedule(lease);
+      renderHistory(lease);
+      renderCompareOptions(lease);
+    };
+
+    const renderSchedule = (lease) => {
+      const schedule = computeSchedule(lease);
+      const reduction = computeReduction(lease);
+
+      const tbody = document.getElementById('scheduleBody');
+      tbody.innerHTML = '';
+      schedule.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.date}</td>
+          <td class="right">${fmt(row.payment)}</td>
+          <td class="right">${fmt(row.interest)}</td>
+          <td class="right">${fmt(row.principal)}</td>
+          <td class="right">${fmt(row.balance)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const summary = document.getElementById('summaryBox');
+      if (reduction) {
+        summary.innerHTML = `
+          <div style="font-size: 13px;">총 지급액: <strong>${fmt(reduction.totalPayment)}</strong></div>
+          <div style="font-size: 13px;">총 이자: <strong>${fmt(reduction.totalInterest)}</strong></div>
+          <div style="font-size: 13px;">총 원금: <strong>${fmt(reduction.totalPrincipal)}</strong></div>
+          <div style="font-size: 13px;">최종 잔액: <strong>${fmt(reduction.finalBalance)}</strong></div>
+        `;
+      } else {
+        summary.innerHTML = '';
+      }
+    };
+
+    const renderHistory = (lease) => {
+      const versions = lease.versions || [];
+      const histList = document.getElementById('historyList');
+      histList.innerHTML = '';
+      versions.forEach(v => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <div>
+            <div style="font-weight: bold; font-size: 13px;">${v.description}</div>
+            <div style="font-size: 11px; color: #666;">${new Date(v.timestamp).toLocaleString('ko-KR')}</div>
+          </div>
+          <button class="btn btn-info" style="padding: 4px 8px; font-size: 12px;" onclick="restoreVersion(${v.versionKey})">복원</button>
+        `;
+        histList.appendChild(item);
+      });
+    };
+
+    const renderCompareOptions = (lease) => {
+      const versions = lease.versions || [];
+      const select = document.getElementById('compareSelect');
+      select.innerHTML = '<option value="">비교 대상 선택</option>';
+      versions.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.versionKey;
+        opt.textContent = `${v.description} (${new Date(v.timestamp).toLocaleDateString('ko-KR')})`;
+        select.appendChild(opt);
+      });
+    };
+
+    const getCurrentFormData = () => {
+      return {
+        lease_id: document.getElementById('leaseId').value,
+        category: document.getElementById('category').value,
+        asset_name: document.getElementById('assetName').value,
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        monthly_payment: +document.getElementById('monthlyPayment').value,
+        annual_rate: +document.getElementById('annualRate').value,
+        initial_rou: +document.getElementById('initialRou').value,
+        payment_timing: document.getElementById('paymentTiming').value
+      };
+    };
+
+    // Event handlers
+    document.getElementById('addBtn').onclick = () => {
+      const newKey = Date.now();
+      const newId = genLeaseId('부동산', leases);
+      const newLease = {
+        key: newKey,
+        lease_id: newId,
+        category: '부동산',
+        asset_name: '신규 리스',
+        start_date: toISO(new Date()),
+        end_date: toISO(new Date()),
+        monthly_payment: 0,
+        annual_rate: 4.5,
+        initial_rou: 0,
+        payment_timing: 'prepaid',
+        versions: [{
+          versionKey: newKey,
+          timestamp: new Date().toISOString(),
+          description: '최초 생성',
+          snapshot: {}
+        }]
+      };
+      leases.push(newLease);
+      saveLeases();
+      selectLease(newKey);
+    };
+
+    document.getElementById('saveBtn').onclick = () => {
+      if (!selectedKey) return;
+      const desc = prompt('변경 설명:', '수정') || '수정';
+      const idx = leases.findIndex(l => l.key === selectedKey);
+      if (idx < 0) return;
+
+      const formData = getCurrentFormData();
+      const vKey = Date.now();
+      const updated = {
+        ...formData,
+        key: selectedKey,
+        versions: [
+          ...(leases[idx].versions || []),
+          {
+            versionKey: vKey,
+            timestamp: new Date().toISOString(),
+            description: desc,
+            snapshot: { ...formData }
+          }
+        ]
+      };
+      leases[idx] = updated;
+      saveLeases();
+      renderLeaseList();
+      renderDetail();
+      alert('저장되었습니다');
+    };
+
+    document.getElementById('deleteBtn').onclick = () => {
+      if (!selectedKey) return;
+      if (!confirm('삭제하시겠습니까?')) return;
+      leases = leases.filter(l => l.key !== selectedKey);
+      saveLeases();
+      selectedKey = null;
+      renderLeaseList();
+      renderDetail();
+    };
+
+    document.getElementById('historyBtn').onclick = () => {
+      const section = document.getElementById('historySection');
+      section.classList.toggle('hidden');
+    };
+
+    document.getElementById('backupBtn').onclick = () => {
+      const blob = new Blob([JSON.stringify(leases, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ifrs16_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    };
+
+    document.getElementById('restoreBtn').onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!Array.isArray(data)) throw new Error('Invalid format');
+            leases = data;
+            saveLeases();
+            renderLeaseList();
+            alert('복구 완료');
+          } catch (err) {
+            alert('복구 실패: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    };
+
+    document.getElementById('searchInput').oninput = (e) => {
+      searchTerm = e.target.value;
+      renderLeaseList();
+    };
+
+    document.getElementById('filterSelect').onchange = (e) => {
+      filterCategory = e.target.value;
+      renderLeaseList();
+    };
+
+    document.getElementById('compareSelect').onchange = (e) => {
+      const vKey = +e.target.value;
+      if (!vKey || !selectedKey) {
+        document.getElementById('deltaResult').classList.add('hidden');
+        return;
+      }
+
+      const curr = leases.find(l => l.key === selectedKey);
+      const ver = curr?.versions?.find(v => v.versionKey === vKey);
+      if (!curr || !ver) {
+        document.getElementById('deltaResult').classList.add('hidden');
+        return;
+      }
+
+      const prev = { ...curr, ...ver.snapshot };
+      const delta = calcDelta(prev, curr);
+
+      if (delta) {
+        document.getElementById('deltaResult').classList.remove('hidden');
+        document.getElementById('deltaResult').innerHTML = `
+          <div style="font-size: 13px; margin-bottom: 4px;">사용권자산 증감: <strong>${fmt(delta.rou)}</strong></div>
+          <div style="font-size: 13px; margin-bottom: 4px;">리스부채 증감: <strong>${fmt(delta.lease_liability)}</strong></div>
+          <div style="font-size: 13px;">총 이자비용 증감: <strong>${fmt(delta.totalInt)}</strong></div>
+        `;
+      } else {
+        document.getElementById('deltaResult').classList.add('hidden');
+      }
+    };
+
+    window.restoreVersion = (vKey) => {
+      if (!selectedKey) return;
+      const lease = leases.find(l => l.key === selectedKey);
+      if (!lease) return;
+      const ver = lease.versions?.find(v => v.versionKey === vKey);
+      if (!ver) return;
+      if (!confirm(`"${ver.description}" 버전으로 복원하시겠습니까?`)) return;
+
+      const idx = leases.findIndex(l => l.key === selectedKey);
+      if (idx < 0) return;
+
+      const restored = { ...lease, ...ver.snapshot };
+      leases[idx] = restored;
+      saveLeases();
+      renderDetail();
+      alert('복원되었습니다');
+    };
+
+    // Initialize
+    loadLeases();
+  </script>
+</body>
+</html>

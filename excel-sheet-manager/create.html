@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엑셀 시트 파일 분리 도구</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #f59e0b;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #fffbeb;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #fef3c7;
+            border-color: #d97706;
+        }
+
+        .upload-area.dragover {
+            background: #fde68a;
+            border-color: #b45309;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .file-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .sheet-list {
+            margin-top: 15px;
+        }
+
+        .sheet-list-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .select-all-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+
+        .select-all-btn:hover {
+            background: #d97706;
+        }
+
+        .sheet-item {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sheet-item:hover {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .sheet-item.selected {
+            border-color: #f59e0b;
+            background: #fef3c7;
+        }
+
+        .sheet-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .sheet-details {
+            flex: 1;
+        }
+
+        .sheet-name {
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .sheet-info {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .file-name-preview {
+            color: #f59e0b;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .options {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .options.show {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .option-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-option:hover {
+            border-color: #f59e0b;
+        }
+
+        .radio-option.selected {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .radio-option label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .download-info {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .download-info.show {
+            display: block;
+        }
+
+        .download-info-title {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .download-info-text {
+            color: #78350f;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .extract-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .extract-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .extract-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .clear-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #4b5563;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+            display: block;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📂 엑셀 시트 파일 분리 도구</h1>
+        <p class="subtitle">하나의 엑셀 파일 내 각 시트를 별도의 엑셀 파일로 추출합니다</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p style="color: #f59e0b; font-weight: 600; margin-bottom: 5px;">엑셀 파일을 선택하세요</p>
+            <p style="color: #999; font-size: 13px;">Excel 파일 (.xlsx, .xls) 지원</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="sheet-list">
+                <div class="sheet-list-title">
+                    <span>추출할 시트를 선택하세요:</span>
+                    <button class="select-all-btn" id="selectAllBtn">전체 선택</button>
+                </div>
+                <div id="sheetList"></div>
+            </div>
+        </div>
+
+        <div class="options" id="options">
+            <div class="option-group">
+                <label>파일명 지정 방식:</label>
+                <div class="radio-group">
+                    <div class="radio-option selected" data-naming="sheet">
+                        <input type="radio" name="namingMethod" id="namingSheet" value="sheet" checked>
+                        <label for="namingSheet">시트명만 사용 (예: 1월.xlsx)</label>
+                    </div>
+                    <div class="radio-option" data-naming="prefix">
+                        <input type="radio" name="namingMethod" id="namingPrefix" value="prefix">
+                        <label for="namingPrefix">원본파일명_시트명 (예: 2024년도_1월.xlsx)</label>
+                    </div>
+                    <div class="radio-option" data-naming="number">
+                        <input type="radio" name="namingMethod" id="namingNumber" value="number">
+                        <label for="namingNumber">원본파일명_번호 (예: 2024년도_01.xlsx)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="keepFormatting" checked>
+                    원본 시트의 서식 유지
+                </label>
+            </div>
+        </div>
+
+        <div class="download-info" id="downloadInfo">
+            <div class="download-info-title">💡 다운로드 안내</div>
+            <div class="download-info-text">
+                여러 파일이 ZIP 압축파일로 다운로드됩니다. 다운로드 후 압축을 해제하여 각각의 엑셀 파일을 확인하세요.
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="extract-btn" id="extractBtn" disabled>파일로 추출하기</button>
+            <button class="clear-btn" id="clearBtn">초기화</button>
+        </div>
+
+        <div class="status" id="status">
+            <span id="statusText"></span>
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentWorkbook = null;
+        let currentFile = null;
+        let selectedSheets = new Set();
+        let sheetDetails = {};
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const sheetList = document.getElementById('sheetList');
+        const options = document.getElementById('options');
+        const downloadInfo = document.getElementById('downloadInfo');
+        const extractBtn = document.getElementById('extractBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const status = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showStatus('error', '엑셀 파일만 업로드 가능합니다.');
+                return;
+            }
+
+            currentFile = file;
+            showStatus('processing', '파일을 읽는 중...');
+
+            try {
+                const data = await readFile(file);
+                currentWorkbook = XLSX.read(data, { type: 'array' });
+                
+                fileName.textContent = `📄 ${file.name}`;
+                displaySheets();
+                fileInfo.classList.add('show');
+                options.classList.add('show');
+                downloadInfo.classList.add('show');
+                hideStatus();
+            } catch (error) {
+                showStatus('error', `파일 읽기 오류: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(new Uint8Array(e.target.result));
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function displaySheets() {
+            sheetList.innerHTML = '';
+            selectedSheets.clear();
+            sheetDetails = {};
+
+            currentWorkbook.SheetNames.forEach((sheetName, index) => {
+                const sheet = currentWorkbook.Sheets[sheetName];
+                const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const rowCount = data.length;
+                const colCount = data[0] ? data[0].length : 0;
+
+                sheetDetails[sheetName] = { rowCount, colCount, index };
+
+                const item = document.createElement('div');
+                item.className = 'sheet-item';
+                
+                const previewName = getPreviewFileName(sheetName, index);
+                
+                item.innerHTML = `
+                    <input type="checkbox" class="sheet-checkbox" id="sheet-${index}" value="${sheetName}">
+                    <div class="sheet-details">
+                        <div class="sheet-name">${sheetName}</div>
+                        <div class="sheet-info">${rowCount}행 × ${colCount}열</div>
+                        <div class="file-name-preview" id="preview-${index}">→ ${previewName}</div>
+                    </div>
+                `;
+                
+                const checkbox = item.querySelector('.sheet-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedSheets.add(sheetName);
+                        item.classList.add('selected');
+                    } else {
+                        selectedSheets.delete(sheetName);
+                        item.classList.remove('selected');
+                    }
+                    updateExtractButton();
+                });
+
+                sheetList.appendChild(item);
+            });
+
+            updateExtractButton();
+        }
+
+        function getPreviewFileName(sheetName, index) {
+            const namingMethod = document.querySelector('input[name="namingMethod"]:checked').value;
+            const baseName = currentFile.name.replace(/\.(xlsx|xls)$/i, '');
+            
+            let fileName = '';
+            if (namingMethod === 'sheet') {
+                fileName = `${sheetName}.xlsx`;
+            } else if (namingMethod === 'prefix') {
+                fileName = `${baseName}_${sheetName}.xlsx`;
+            } else {
+                fileName = `${baseName}_${String(index + 1).padStart(2, '0')}.xlsx`;
+            }
+            
+            return fileName.replace(/[:\\/?*\[\]]/g, '_');
+        }
+
+        function updateFileNamePreviews() {
+            currentWorkbook.SheetNames.forEach((sheetName, index) => {
+                const preview = document.getElementById(`preview-${index}`);
+                if (preview) {
+                    preview.textContent = `→ ${getPreviewFileName(sheetName, index)}`;
+                }
+            });
+        }
+
+        // 파일명 지정 방식 라디오 버튼
+        document.querySelectorAll('.radio-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                document.querySelectorAll('.radio-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                
+                updateFileNamePreviews();
+            });
+        });
+
+        selectAllBtn.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.sheet-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                const event = new Event('change');
+                cb.dispatchEvent(event);
+            });
+
+            selectAllBtn.textContent = allChecked ? '전체 선택' : '전체 해제';
+        });
+
+        function updateExtractButton() {
+            extractBtn.disabled = selectedSheets.size === 0;
+        }
+
+        clearBtn.addEventListener('click', () => {
+            currentWorkbook = null;
+            currentFile = null;
+            selectedSheets.clear();
+            sheetDetails = {};
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+            options.classList.remove('show');
+            downloadInfo.classList.remove('show');
+            sheetList.innerHTML = '';
+            hideStatus();
+            updateExtractButton();
+        });
+
+        extractBtn.addEventListener('click', async () => {
+            if (selectedSheets.size === 0) return;
+
+            showStatus('processing', `0 / ${selectedSheets.size} 파일 생성 중...`);
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            try {
+                const zip = new JSZip();
+                const namingMethod = document.querySelector('input[name="namingMethod"]:checked').value;
+                const baseName = currentFile.name.replace(/\.(xlsx|xls)$/i, '');
+                
+                let processedCount = 0;
+                
+                for (const sheetName of selectedSheets) {
+                    const newWb = XLSX.utils.book_new();
+                    const sheet = currentWorkbook.Sheets[sheetName];
+                    
+                    // 시트 복사
+                    const newSheet = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    const ws = XLSX.utils.aoa_to_sheet(newSheet);
+                    
+                    // 열 너비 복사
+                    if (sheet['!cols']) {
+                        ws['!cols'] = sheet['!cols'];
+                    }
+                    
+                    // 병합 정보 복사
+                    if (sheet['!merges']) {
+                        ws['!merges'] = sheet['!merges'];
+                    }
+                    
+                    XLSX.utils.book_append_sheet(newWb, ws, sheetName);
+                    
+                    // 파일명 생성
+                    const index = sheetDetails[sheetName].index;
+                    let fileName = '';
+                    if (namingMethod === 'sheet') {
+                        fileName = `${sheetName}.xlsx`;
+                    } else if (namingMethod === 'prefix') {
+                        fileName = `${baseName}_${sheetName}.xlsx`;
+                    } else {
+                        fileName = `${baseName}_${String(index + 1).padStart(2, '0')}.xlsx`;
+                    }
+                    
+                    fileName = fileName.replace(/[:\\/?*\[\]]/g, '_');
+                    
+                    // 엑셀 파일을 바이너리로 변환
+                    const wbout = XLSX.write(newWb, { bookType: 'xlsx', type: 'array' });
+                    zip.file(fileName, wbout);
+                    
+                    processedCount++;
+                    const progress = (processedCount / selectedSheets.size) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    statusText.textContent = `${processedCount} / ${selectedSheets.size} 파일 생성 중...`;
+                }
+                
+                statusText.textContent = 'ZIP 파일 생성 중...';
+                
+                // ZIP 파일 생성 및 다운로드
+                const content = await zip.generateAsync({ type: 'blob' });
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const zipFileName = `${baseName}_분리_${timestamp}.zip`;
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = zipFileName;
+                link.click();
+                
+                progressBar.style.display = 'none';
+                showStatus('success', `✓ ${selectedSheets.size}개의 파일이 성공적으로 생성되었습니다!`);
+                
+            } catch (error) {
+                progressBar.style.display = 'none';
+                showStatus('error', `✗ 오류 발생: ${error.message}`);
+                console.error(error);
+            }
+        });
+
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            statusText.textContent = message;
+        }
+
+        function hideStatus() {
+            status.className = 'status';
+            statusText.textContent = '';
+            progressBar.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

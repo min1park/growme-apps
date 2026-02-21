@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엑셀 시트 분할 도구</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #10b981;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f0fdf4;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #dcfce7;
+            border-color: #059669;
+        }
+
+        .upload-area.dragover {
+            background: #d1fae5;
+            border-color: #047857;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .file-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .sheet-selector {
+            margin-top: 15px;
+        }
+
+        .sheet-selector label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .sheet-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .sheet-selector select:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+
+        .preview-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .preview-section.show {
+            display: block;
+        }
+
+        .preview-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .preview-table {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #10b981;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .split-options {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .split-options.show {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-option:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .radio-option.selected {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .radio-option label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .radio-description {
+            color: #666;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .column-selector {
+            margin-top: 10px;
+        }
+
+        .column-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .row-input {
+            margin-top: 10px;
+        }
+
+        .row-input input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .split-preview {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .split-preview.show {
+            display: block;
+        }
+
+        .split-info {
+            color: #059669;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .sheet-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .sheet-item {
+            padding: 8px 12px;
+            background: #f0fdf4;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sheet-name-col {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .sheet-count {
+            color: #666;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .split-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .split-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .split-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .clear-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #4b5563;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✂️ 엑셀 시트 분할 도구</h1>
+        <p class="subtitle">하나의 시트를 여러 시트로 분할합니다</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p style="color: #10b981; font-weight: 600; margin-bottom: 5px;">엑셀 파일을 선택하세요</p>
+            <p style="color: #999; font-size: 13px;">Excel 파일 (.xlsx, .xls) 지원</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="sheet-selector">
+                <label>분할할 시트 선택:</label>
+                <select id="sheetSelect">
+                    <option value="">시트를 선택하세요</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <div class="preview-title">📊 데이터 미리보기 (상위 5개 행)</div>
+            <div class="preview-table" id="previewTable"></div>
+        </div>
+
+        <div class="split-options" id="splitOptions">
+            <div class="option-group">
+                <label>분할 방법:</label>
+                <div class="radio-group">
+                    <div class="radio-option" data-method="column">
+                        <input type="radio" name="splitMethod" id="methodColumn" value="column">
+                        <div>
+                            <label for="methodColumn">열 값으로 분할</label>
+                            <div class="radio-description">특정 열의 값을 기준으로 분할 (예: 부서별, 지역별)</div>
+                        </div>
+                    </div>
+                    <div class="radio-option" data-method="rows">
+                        <input type="radio" name="splitMethod" id="methodRows" value="rows">
+                        <div>
+                            <label for="methodRows">행 개수로 분할</label>
+                            <div class="radio-description">지정한 행 개수마다 새 시트로 분할</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column-selector" id="columnSelector" style="display: none;">
+                <label>분할 기준 열:</label>
+                <select id="columnSelect">
+                    <option value="">열을 선택하세요</option>
+                </select>
+            </div>
+
+            <div class="row-input" id="rowInput" style="display: none;">
+                <label>시트당 행 개수:</label>
+                <input type="number" id="rowCount" min="1" value="100" placeholder="예: 100">
+            </div>
+
+            <div class="option-group" style="margin-top: 15px;">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="keepHeaders" checked>
+                    각 시트마다 헤더 행 포함
+                </label>
+            </div>
+
+            <div class="split-preview" id="splitPreview">
+                <div class="split-info" id="splitInfo"></div>
+                <div class="sheet-list" id="sheetList"></div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="split-btn" id="splitBtn" disabled>시트 분할하기</button>
+            <button class="clear-btn" id="clearBtn">초기화</button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentWorkbook = null;
+        let currentFile = null;
+        let currentSheetData = null;
+        let currentHeaders = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const sheetSelect = document.getElementById('sheetSelect');
+        const previewSection = document.getElementById('previewSection');
+        const previewTable = document.getElementById('previewTable');
+        const splitOptions = document.getElementById('splitOptions');
+        const columnSelector = document.getElementById('columnSelector');
+        const columnSelect = document.getElementById('columnSelect');
+        const rowInput = document.getElementById('rowInput');
+        const rowCount = document.getElementById('rowCount');
+        const splitPreview = document.getElementById('splitPreview');
+        const splitInfo = document.getElementById('splitInfo');
+        const sheetList = document.getElementById('sheetList');
+        const splitBtn = document.getElementById('splitBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const status = document.getElementById('status');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showStatus('error', '엑셀 파일만 업로드 가능합니다.');
+                return;
+            }
+
+            currentFile = file;
+            showStatus('processing', '파일을 읽는 중...');
+
+            try {
+                const data = await readFile(file);
+                currentWorkbook = XLSX.read(data, { type: 'array' });
+                
+                fileName.textContent = `📄 ${file.name}`;
+                populateSheetSelect();
+                fileInfo.classList.add('show');
+                hideStatus();
+            } catch (error) {
+                showStatus('error', `파일 읽기 오류: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(new Uint8Array(e.target.result));
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function populateSheetSelect() {
+            sheetSelect.innerHTML = '<option value="">시트를 선택하세요</option>';
+            currentWorkbook.SheetNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                sheetSelect.appendChild(option);
+            });
+        }
+
+        sheetSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                loadSheetData(e.target.value);
+            } else {
+                previewSection.classList.remove('show');
+                splitOptions.classList.remove('show');
+                splitPreview.classList.remove('show');
+                splitBtn.disabled = true;
+            }
+        });
+
+        function loadSheetData(sheetName) {
+            const sheet = currentWorkbook.Sheets[sheetName];
+            currentSheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            if (currentSheetData.length === 0) {
+                showStatus('error', '시트에 데이터가 없습니다.');
+                return;
+            }
+
+            currentHeaders = currentSheetData[0];
+            showPreview();
+            populateColumnSelect();
+            splitOptions.classList.add('show');
+        }
+
+        function showPreview() {
+            const previewData = currentSheetData.slice(0, 6); // 헤더 + 5행
+            let html = '<table><thead><tr>';
+            
+            previewData[0].forEach(header => {
+                html += `<th>${header || ''}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            for (let i = 1; i < previewData.length; i++) {
+                html += '<tr>';
+                previewData[i].forEach(cell => {
+                    html += `<td>${cell !== undefined && cell !== null ? cell : ''}</td>`;
+                });
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            
+            previewTable.innerHTML = html;
+            previewSection.classList.add('show');
+        }
+
+        function populateColumnSelect() {
+            columnSelect.innerHTML = '<option value="">열을 선택하세요</option>';
+            currentHeaders.forEach((header, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${header || `열${index + 1}`}`;
+                columnSelect.appendChild(option);
+            });
+        }
+
+        // 분할 방법 라디오 버튼
+        document.querySelectorAll('.radio-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                document.querySelectorAll('.radio-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                
+                const method = this.dataset.method;
+                if (method === 'column') {
+                    columnSelector.style.display = 'block';
+                    rowInput.style.display = 'none';
+                } else {
+                    columnSelector.style.display = 'none';
+                    rowInput.style.display = 'block';
+                }
+                
+                splitPreview.classList.remove('show');
+                splitBtn.disabled = true;
+            });
+        });
+
+        columnSelect.addEventListener('change', () => {
+            if (columnSelect.value !== '') {
+                generateColumnPreview();
+            }
+        });
+
+        rowCount.addEventListener('input', () => {
+            if (rowCount.value && parseInt(rowCount.value) > 0) {
+                generateRowPreview();
+            }
+        });
+
+        function generateColumnPreview() {
+            const colIndex = parseInt(columnSelect.value);
+            const uniqueValues = new Set();
+            const valueCounts = {};
+            
+            for (let i = 1; i < currentSheetData.length; i++) {
+                const value = currentSheetData[i][colIndex];
+                if (value !== undefined && value !== null && value !== '') {
+                    const strValue = String(value);
+                    uniqueValues.add(strValue);
+                    valueCounts[strValue] = (valueCounts[strValue] || 0) + 1;
+                }
+            }
+            
+            splitInfo.textContent = `총 ${uniqueValues.size}개의 시트가 생성됩니다:`;
+            
+            let html = '';
+            Array.from(uniqueValues).sort().forEach(value => {
+                html += `
+                    <div class="sheet-item">
+                        <span class="sheet-name-col">${value}</span>
+                        <span class="sheet-count">${valueCounts[value]}행</span>
+                    </div>
+                `;
+            });
+            
+            sheetList.innerHTML = html;
+            splitPreview.classList.add('show');
+            splitBtn.disabled = false;
+        }
+
+        function generateRowPreview() {
+            const rows = parseInt(rowCount.value);
+            const dataRows = currentSheetData.length - 1; // 헤더 제외
+            const sheetCount = Math.ceil(dataRows / rows);
+            
+            splitInfo.textContent = `총 ${sheetCount}개의 시트가 생성됩니다:`;
+            
+            let html = '';
+            for (let i = 0; i < sheetCount; i++) {
+                const start = i * rows + 1;
+                const end = Math.min((i + 1) * rows, dataRows);
+                const count = end - start + 1;
+                html += `
+                    <div class="sheet-item">
+                        <span class="sheet-name-col">시트${i + 1}</span>
+                        <span class="sheet-count">${count}행</span>
+                    </div>
+                `;
+            }
+            
+            sheetList.innerHTML = html;
+            splitPreview.classList.add('show');
+            splitBtn.disabled = false;
+        }
+
+        splitBtn.addEventListener('click', () => {
+            const method = document.querySelector('input[name="splitMethod"]:checked');
+            if (!method) {
+                showStatus('error', '분할 방법을 선택하세요.');
+                return;
+            }
+
+            showStatus('processing', '시트를 분할하는 중...');
+
+            try {
+                if (method.value === 'column') {
+                    splitByColumn();
+                } else {
+                    splitByRows();
+                }
+            } catch (error) {
+                showStatus('error', `오류 발생: ${error.message}`);
+                console.error(error);
+            }
+        });
+
+        function splitByColumn() {
+            const colIndex = parseInt(columnSelect.value);
+            const keepHeaders = document.getElementById('keepHeaders').checked;
+            const sheetName = sheetSelect.value;
+            
+            const groups = {};
+            
+            for (let i = 1; i < currentSheetData.length; i++) {
+                const value = currentSheetData[i][colIndex];
+                const key = value !== undefined && value !== null && value !== '' ? String(value) : '미분류';
+                
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                groups[key].push(currentSheetData[i]);
+            }
+            
+            const newWb = XLSX.utils.book_new();
+            
+            Object.keys(groups).sort().forEach(key => {
+                const sheetData = keepHeaders ? [currentHeaders, ...groups[key]] : groups[key];
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                
+                // 열 너비 자동 조정
+                const colWidths = [];
+                sheetData.forEach(row => {
+                    row.forEach((cell, i) => {
+                        const cellLength = cell ? String(cell).length : 10;
+                        colWidths[i] = Math.max(colWidths[i] || 10, cellLength);
+                    });
+                });
+                ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w + 2, 50) }));
+                
+                // 시트 이름 정리 (특수문자 제거)
+                const cleanKey = key.replace(/[:\\/?*\[\]]/g, '_').substring(0, 31);
+                XLSX.utils.book_append_sheet(newWb, ws, cleanKey);
+            });
+            
+            downloadWorkbook(newWb, Object.keys(groups).length);
+        }
+
+        function splitByRows() {
+            const rows = parseInt(rowCount.value);
+            const keepHeaders = document.getElementById('keepHeaders').checked;
+            const dataRows = currentSheetData.slice(1);
+            const sheetCount = Math.ceil(dataRows.length / rows);
+            
+            const newWb = XLSX.utils.book_new();
+            
+            for (let i = 0; i < sheetCount; i++) {
+                const start = i * rows;
+                const end = Math.min((i + 1) * rows, dataRows.length);
+                const chunk = dataRows.slice(start, end);
+                
+                const sheetData = keepHeaders ? [currentHeaders, ...chunk] : chunk;
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                
+                // 열 너비 자동 조정
+                const colWidths = [];
+                sheetData.forEach(row => {
+                    row.forEach((cell, j) => {
+                        const cellLength = cell ? String(cell).length : 10;
+                        colWidths[j] = Math.max(colWidths[j] || 10, cellLength);
+                    });
+                });
+                ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w + 2, 50) }));
+                
+                XLSX.utils.book_append_sheet(newWb, ws, `시트${i + 1}`);
+            }
+            
+            downloadWorkbook(newWb, sheetCount);
+        }
+
+        function downloadWorkbook(workbook, sheetCount) {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const originalName = currentFile.name.replace(/\.(xlsx|xls)$/i, '');
+            XLSX.writeFile(workbook, `${originalName}_분할_${timestamp}.xlsx`);
+            
+            showStatus('success', `✓ ${sheetCount}개의 시트로 성공적으로 분할되었습니다!`);
+        }
+
+        clearBtn.addEventListener('click', () => {
+            currentWorkbook = null;
+            currentFile = null;
+            currentSheetData = null;
+            currentHeaders = null;
+            fileInput.value = '';
+            sheetSelect.value = '';
+            columnSelect.value = '';
+            rowCount.value = '100';
+            
+            fileInfo.classList.remove('show');
+            previewSection.classList.remove('show');
+            splitOptions.classList.remove('show');
+            splitPreview.classList.remove('show');
+            
+            document.querySelectorAll('.radio-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.querySelectorAll('input[name="splitMethod"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            columnSelector.style.display = 'none';
+            rowInput.style.display = 'none';
+            
+            hideStatus();
+            splitBtn.disabled = true;
+        });
+
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function hideStatus() {
+            status.className = 'status';
+            status.textContent = '';
+        }
+    </script>
+</body>
+</html>
