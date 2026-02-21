@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Sampling Worksheet (감사 샘플링 워크시트)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+:root {
+  --primary: #1a365d;
+  --primary-light: #2c5282;
+  --accent: #2b6cb0;
+  --bg-light: #f7fafc;
+  --bg-section: #ffffff;
+  --border: #e2e8f0;
+  --warning: #c53030;
+  --warning-bg: #fff5f5;
+  --success: #276749;
+  --text: #2d3748;
+  --text-muted: #718096;
+  --result-bg: #ebf8ff;
+  --input-bg: #fffff0;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-light);
+  margin: 0;
+}
+.app-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.app-header h1 { font-size: 1.2rem; margin: 0; font-weight: 600; }
+.app-header .header-actions button {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 4px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 8px;
+}
+.app-header .header-actions button:hover { background: rgba(255,255,255,0.25); }
+.nav-tabs {
+  background: #fff;
+  border-bottom: 2px solid var(--primary);
+  padding: 0 16px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.nav-tabs .nav-link {
+  color: var(--text-muted);
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 16px;
+  font-size: 12px;
+  white-space: nowrap;
+  border-radius: 0;
+  margin-bottom: -2px;
+}
+.nav-tabs .nav-link.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 700;
+  background: #fff;
+}
+.nav-tabs .nav-link:hover:not(.active) {
+  color: var(--accent);
+  border-bottom-color: #bee3f8;
+}
+.tab-content { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+.section-card {
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.section-card h3 {
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+  margin-top: 0;
+}
+.section-card h4 {
+  color: var(--primary-light);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 12px 0 8px 0;
+}
+.calc-table { width: 100%; border-collapse: collapse; }
+.calc-table th, .calc-table td {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+.calc-table th {
+  background: #edf2f7;
+  font-weight: 600;
+  text-align: center;
+  font-size: 12px;
+  color: var(--primary);
+}
+.calc-table .row-label {
+  background: #f7fafc;
+  font-weight: 500;
+  min-width: 200px;
+}
+.calc-input {
+  background: var(--input-bg);
+  border: 1px solid #cbd5e0;
+  text-align: right;
+  font-family: 'Consolas', 'D2Coding', monospace;
+  padding: 4px 8px;
+  width: 100%;
+  font-size: 13px;
+  border-radius: 3px;
+}
+.calc-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(43,108,176,0.15); }
+.calc-select {
+  background: var(--input-bg);
+  border: 1px solid #cbd5e0;
+  padding: 4px 8px;
+  width: 100%;
+  font-size: 12px;
+  border-radius: 3px;
+}
+.calc-select:focus { outline: none; border-color: var(--accent); }
+.calc-output {
+  background: var(--result-bg);
+  font-weight: 700;
+  text-align: right;
+  padding: 5px 10px;
+  font-family: 'Consolas', 'D2Coding', monospace;
+  color: var(--primary);
+}
+.calc-result-big {
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 10px;
+}
+.calc-warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid #feb2b2;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  margin: 8px 0;
+  display: none;
+}
+.calc-warning.visible { display: block; }
+.info-tip {
+  display: inline-block;
+  width: 15px; height: 15px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 10px;
+  line-height: 15px;
+  cursor: help;
+  margin-left: 4px;
+  position: relative;
+}
+.info-tip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d3748;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 100;
+  max-width: 300px;
+  white-space: normal;
+  min-width: 200px;
+}
+.ref-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.ref-table th {
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: 500;
+  border: 1px solid #2c5282;
+}
+.ref-table td {
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  text-align: center;
+}
+.ref-table tr:nth-child(even) td { background: #f7fafc; }
+.ref-table .highlight { background: #fefcbf !important; font-weight: 700; }
+.sub-tabs { margin-bottom: 16px; }
+.sub-tabs .btn {
+  font-size: 12px;
+  padding: 5px 16px;
+  border-radius: 20px;
+}
+.sub-tabs .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+.sub-tabs .btn-primary { background: var(--primary); border-color: var(--primary); }
+.step-card {
+  border-left: 4px solid var(--primary);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fff;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.step-card .step-num {
+  display: inline-block;
+  width: 28px; height: 28px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 28px;
+  font-weight: 700;
+  font-size: 13px;
+  margin-right: 8px;
+}
+.step-card .step-result {
+  float: right;
+  background: var(--result-bg);
+  padding: 4px 14px;
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Consolas', 'D2Coding', monospace;
+}
+.accordion-button { font-size: 13px; font-weight: 600; color: var(--primary); padding: 10px 16px; }
+.accordion-button:not(.collapsed) { background: #ebf8ff; color: var(--primary); }
+.accordion-body { font-size: 12.5px; line-height: 1.7; }
+
+/* Guide-specific styles */
+.guide-workflow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:12px 0; padding:14px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
+.guide-workflow .wf-step { background:var(--primary); color:#fff; padding:7px 16px; border-radius:20px; font-size:11.5px; font-weight:600; white-space:nowrap; cursor:pointer; transition:all 0.2s; border:none; }
+.guide-workflow .wf-step:hover { background:var(--accent); transform:translateY(-1px); }
+.guide-workflow .wf-arrow { color:var(--text-muted); font-size:15px; font-weight:700; }
+.guide-workflow .wf-label { font-size:11px; color:var(--text-muted); font-weight:600; width:100%; margin-bottom:4px; }
+.guide-tip { background:#fffff0; border-left:4px solid #ecc94b; padding:9px 13px; margin:10px 0; border-radius:0 6px 6px 0; font-size:12px; }
+.guide-tip strong { color:#975a16; }
+.guide-warning { background:#fff5f5; border-left:4px solid #fc8181; padding:9px 13px; margin:10px 0; border-radius:0 6px 6px 0; font-size:12px; }
+.guide-warning strong { color:#c53030; }
+.guide-step-list { counter-reset:guide-step; list-style:none; padding-left:0; margin:10px 0; }
+.guide-step-list li { counter-increment:guide-step; padding:8px 0 8px 40px; position:relative; border-bottom:1px solid #edf2f7; }
+.guide-step-list li:last-child { border-bottom:none; }
+.guide-step-list li::before { content:counter(guide-step); position:absolute; left:0; top:8px; width:26px; height:26px; background:var(--accent); color:#fff; border-radius:50%; text-align:center; line-height:26px; font-size:11px; font-weight:700; }
+.guide-field-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
+.guide-field-table th { background:#edf2f7; padding:6px 10px; font-weight:600; text-align:left; border:1px solid var(--border); }
+.guide-field-table td { padding:5px 10px; border:1px solid var(--border); vertical-align:top; }
+.guide-field-table td code { background:#edf2f7; padding:1px 5px; border-radius:3px; font-size:11px; }
+.guide-path { display:flex; align-items:flex-start; gap:10px; padding:10px; background:#ebf8ff; border-radius:6px; margin:8px 0; }
+.guide-path .path-icon { font-size:1.3em; flex-shrink:0; }
+.guide-path .path-content { font-size:12px; }
+.guide-path .path-content strong { color:var(--primary); }
+
+.btn-reset {
+  background: #e2e8f0;
+  color: var(--text);
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn-reset:hover { background: #cbd5e0; }
+textarea.calc-input { text-align: left; min-height: 60px; resize: vertical; }
+.formula-box {
+  background: #edf2f7;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: 'Consolas', 'D2Coding', monospace;
+  font-size: 13px;
+  margin: 8px 0;
+}
+.toc-assess-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.toc-assess-table th, .toc-assess-table td { padding: 4px 8px; border: 1px solid var(--border); }
+.toc-assess-table th { background: #edf2f7; text-align: center; font-weight: 600; }
+.toc-assess-table .factor-label { min-width: 180px; background: #f7fafc; }
+footer {
+  text-align: center;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
+}
+/* Tab 8: Sample Extraction */
+.upload-zone {
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f7fafc;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: #ebf8ff;
+}
+.upload-zone .upload-icon { font-size: 2.5rem; color: var(--accent); }
+.upload-zone p { margin: 8px 0 0; color: var(--text-muted); font-size: 13px; }
+.file-info {
+  display: flex; align-items: center; gap: 12px;
+  background: #ebf8ff; border: 1px solid #bee3f8;
+  border-radius: 6px; padding: 10px 16px; margin: 12px 0;
+}
+.file-info .file-name { font-weight: 600; color: var(--primary); }
+.file-info .file-meta { font-size: 11px; color: var(--text-muted); }
+.file-info .btn-remove { margin-left: auto; cursor: pointer; color: var(--warning); font-size: 18px; background: none; border: none; }
+.data-preview { max-height: 300px; overflow: auto; border: 1px solid var(--border); border-radius: 4px; }
+.data-preview table { font-size: 11px; margin: 0; }
+.data-preview th { position: sticky; top: 0; z-index: 1; background: var(--primary) !important; color: #fff !important; font-size: 11px; }
+.data-preview td { white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.sample-result-table { font-size: 12px; }
+.sample-result-table th { background: var(--primary); color: #fff; position: sticky; top: 0; z-index: 1; }
+.sample-result-table tr.sampled { background: #fefcbf; }
+.sample-stats { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+.sample-stats .stat-box {
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 16px; min-width: 140px; text-align: center;
+}
+.sample-stats .stat-box .stat-val { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+.sample-stats .stat-box .stat-label { font-size: 11px; color: var(--text-muted); }
+.config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.config-grid .config-item label { font-weight: 600; font-size: 12px; display: block; margin-bottom: 4px; }
+.mus-help { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.strat-config { border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-top: 8px; background: #f7fafc; }
+.strat-config h5 { font-size: 12px; font-weight: 700; margin: 0 0 8px; color: var(--primary); }
+/* Tab 9: Confirmation Sampling */
+.confirm-section { border: 2px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.confirm-section.receivable { border-left: 5px solid #2b6cb0; }
+.confirm-section.payable { border-left: 5px solid #c53030; }
+.confirm-section h4 { margin-top: 0; }
+.confirm-section h4 .badge-recv { background: #2b6cb0; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.confirm-section h4 .badge-pay { background: #c53030; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.confirm-upload-zone {
+  border: 2px dashed #cbd5e0; border-radius: 6px; padding: 24px 16px;
+  text-align: center; cursor: pointer; background: #f7fafc; transition: 0.2s;
+}
+.confirm-upload-zone:hover { border-color: var(--accent); background: #ebf8ff; }
+.key-item-section {
+  background: #fffff0; border: 1px solid #ecc94b; border-radius: 6px; padding: 12px; margin: 10px 0;
+}
+.key-item-section h5 { font-size: 12px; color: #975a16; margin: 0 0 6px; font-weight: 700; }
+.dual-result { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 768px) { .dual-result { grid-template-columns: 1fr; } }
+@media print {
+  .app-header .header-actions, .nav-tabs, .tab-pane:not(.active), .btn-reset, .no-print, footer { display: none !important; }
+  .tab-pane.active { display: block !important; }
+  body { background: #fff; font-size: 11px; }
+  .tab-content { padding: 0; max-width: 100%; }
+  .section-card { box-shadow: none; border: 1px solid #999; page-break-inside: avoid; }
+  .calc-input, .calc-select { border: none; background: transparent; }
+  .app-header { background: #fff; color: #000; border-bottom: 2px solid #000; }
+  .app-header h1 { color: #000; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Audit Sampling Worksheet &mdash; 감사 샘플링 워크시트</h1>
+  <div class="header-actions no-print">
+    <button onclick="window.print()">인쇄</button>
+    <button onclick="resetCurrentTab()">현재 탭 초기화</button>
+  </div>
+</header>
+
+<ul class="nav nav-tabs" id="mainTabs" role="tablist">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab1" role="tab">ToD 대표표본</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab2" role="tab">ToD 속성표본</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab3" role="tab">오류금액 추정</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab4" role="tab">IPE 테스트</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab5" role="tab">통제테스트 (ToC)</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab6" role="tab">R-factor 참고</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab7" role="tab">가이드</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab8" role="tab" style="color:var(--accent);font-weight:600">&#x1f4cb; 샘플 추출</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab9" role="tab" style="color:var(--accent);font-weight:600">&#x1f4e8; 조회서 샘플링</a></li>
+</ul>
+
+<div class="tab-content">
+
+<!-- ==================== TAB 1: ToD Representative Sampling ==================== -->
+<div class="tab-pane fade show active" id="tab1" role="tabpanel">
+
+  <div class="section-card">
+    <h3>문서 정보 (Document Information)</h3>
+    <div class="row g-2">
+      <div class="col-md-3"><label class="form-label">Client Name</label><input type="text" class="calc-input" id="t1_client" style="text-align:left"></div>
+      <div class="col-md-3"><label class="form-label">F/S Period End</label><input type="date" class="calc-input" id="t1_period"></div>
+      <div class="col-md-3"><label class="form-label">Financial Statement Area</label><input type="text" class="calc-input" id="t1_area" style="text-align:left"></div>
+      <div class="col-md-3"><label class="form-label">Test (경영자주장)</label><input type="text" class="calc-input" id="t1_test" style="text-align:left"></div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <h3>A. 모집단 (Population Parameters)</h3>
+    <table class="calc-table">
+      <thead>
+        <tr><th style="width:40%">항목</th><th style="width:30%">금액 (Amount)</th><th style="width:30%">항목수 (# Items)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="row-label">Account balance (계정잔액)</td>
+            <td><input type="number" class="calc-input" id="t1_balance" step="1"></td>
+            <td><input type="number" class="calc-input" id="t1_count" step="1"></td></tr>
+        <tr><td class="row-label">Key items (주요항목) <span class="info-tip" data-tip="위험기반 타겟 샘플링 항목. Guidance Tab B 참고">?</span></td>
+            <td><input type="number" class="calc-input" id="t1_keyAmt" step="1" value="0"></td>
+            <td><input type="number" class="calc-input" id="t1_keyCnt" step="1" value="0"></td></tr>
+        <tr><td class="row-label">Negative balance items (음수항목 절대값)</td>
+            <td><input type="number" class="calc-input" id="t1_neg" step="1" value="0"></td>
+            <td></td></tr>
+        <tr><td class="row-label">Excluded items (기타 제외 항목)</td>
+            <td><input type="number" class="calc-input" id="t1_excl" step="1" value="0"></td>
+            <td></td></tr>
+        <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Sampled balance (최종 샘플링 대상)</td>
+            <td class="calc-output" id="t1_sampBal">-</td>
+            <td class="calc-output" id="t1_sampCnt">-</td></tr>
+      </tbody>
+    </table>
+    <div class="row g-2 mt-2">
+      <div class="col-md-4"><label class="form-label">Overall Materiality (전체 중요성)</label><input type="number" class="calc-input" id="t1_om" step="1"></div>
+      <div class="col-md-4"><label class="form-label">Performance Materiality (수행중요성, PM) <span class="info-tip" data-tip="PM은 0보다 커야 합니다. 샘플사이즈 산정의 분모">?</span></label><input type="number" class="calc-input" id="t1_pm" step="1"></div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <h3>B. R-Factor 평가 (Assurance Assessment)</h3>
+    <table class="calc-table">
+      <thead><tr><th style="width:45%">평가 항목</th><th style="width:30%">선택</th><th style="width:25%">R-factor 값</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">RMM Level (중요왜곡표시위험) <span class="info-tip" data-tip="Significant risk = 3, Normal risk = 2">?</span></td>
+            <td><select class="calc-select" id="t1_rmm"><option value="2">Normal (2)</option><option value="3">Significant (3)</option></select></td>
+            <td class="calc-output" id="t1_rmmVal">2</td></tr>
+        <tr><td class="row-label">TOC Assurance (통제테스트 보증)</td>
+            <td><select class="calc-select" id="t1_toc"><option value="0">TOC not performed (0)</option><option value="2">TOC performed successfully (2)</option></select></td>
+            <td class="calc-output" id="t1_tocVal">0</td></tr>
+        <tr><td class="row-label">SAP Assurance (분석적실증절차) <span class="info-tip" data-tip="Substantive Analytical Procedures 보증수준">?</span></td>
+            <td><select class="calc-select" id="t1_sap"><option value="0">None (0)</option><option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option><option value="2">2</option></select></td>
+            <td class="calc-output" id="t1_sapVal">0</td></tr>
+        <tr><td class="row-label">Other Substantive Procedures (기타실증절차) <span class="info-tip" data-tip="기타 실증절차에 의한 추가 보증">?</span></td>
+            <td><select class="calc-select" id="t1_osp"><option value="0">No (0)</option><option value="0.5">Yes (0.5)</option><option value="1">Yes (1.0)</option><option value="1.5">Yes (1.5)</option><option value="2">Yes (2.0)</option><option value="2.5">Yes (2.5)</option></select></td>
+            <td class="calc-output" id="t1_ospVal">0</td></tr>
+        <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Substantive Sampling R-factor (실증샘플링 R-factor)</td>
+            <td></td>
+            <td class="calc-output" id="t1_rFactor" style="font-size:1.1em">2</td></tr>
+      </tbody>
+    </table>
+    <div class="calc-warning" id="t1_warnExceed">⚠ Warning: Total assurance exceeds RMM level (총 보증이 RMM을 초과합니다)</div>
+    <div class="calc-warning" id="t1_warnLess">⚠ Warning: Total assurance is less than RMM level (총 보증이 RMM보다 부족합니다)</div>
+    <div class="calc-warning" id="t1_warnToc">⚠ Note: TOCs cannot provide 100% assurance that all control deviations have been detected. Additional substantive procedures should be considered. (통제테스트는 100% 보증을 제공하지 못합니다)</div>
+  </div>
+
+  <div class="section-card">
+    <h3>C. 샘플사이즈 산정 (Sample Size Calculation)</h3>
+    <table class="calc-table">
+      <tbody>
+        <tr><td class="row-label">Initial sample size (초기 샘플수)</td>
+            <td class="calc-output" id="t1_initSample">-</td></tr>
+        <tr><td class="row-label">Initial sample (rounded) (반올림)</td>
+            <td class="calc-output" id="t1_initRound">-</td></tr>
+        <tr><td class="row-label">Variability addressed? (변동성 고려) <span class="info-tip" data-tip="No: 1.25배 가산, Yes: 1.0배 (가산 없음)">?</span></td>
+            <td><select class="calc-select" id="t1_var"><option value="1.25">No (×1.25 multiplier)</option><option value="1">Yes (×1.0, no multiplier)</option></select></td></tr>
+        <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Adjusted sample size (조정 후 샘플수)</td>
+            <td class="calc-output" id="t1_adjSample" style="font-size:1.05em">-</td></tr>
+        <tr><td class="row-label">Key items count (주요항목 건수)</td>
+            <td class="calc-output" id="t1_keyCount">0</td></tr>
+        <tr class="calc-result-big"><td style="font-weight:700; text-align:left">Total Sample Size (최종 샘플수)</td>
+            <td id="t1_totalSample" style="font-size:1.3em">-</td></tr>
+      </tbody>
+    </table>
+    <div class="formula-box">
+      <strong>산식:</strong> Sample Size = Sampled Balance × R-factor / PM × Variability Multiplier + Key Items
+    </div>
+  </div>
+
+  <div class="section-card">
+    <h3>D. 표본선택 방법 (Sample Selection Method)</h3>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label">Selection Method</label>
+        <select class="calc-select" id="t1_method">
+          <option value="">-- 선택 --</option>
+          <option value="interval">Interval (간격추출)</option>
+          <option value="random">Random (무작위)</option>
+          <option value="haphazard">Haphazard (임의)</option>
+          <option value="stratified">Stratified (층화)</option>
+          <option value="mus">Monetary Unit (화폐단위)</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="t1_intervalBox" style="display:none">
+        <label class="form-label">Numeric Interval (간격)</label>
+        <div class="calc-output" id="t1_interval">-</div>
+      </div>
+      <div class="col-md-4" id="t1_musBox" style="display:none">
+        <label class="form-label">Monetary Interval (화폐 간격)</label>
+        <div class="calc-output" id="t1_musInterval">-</div>
+      </div>
+    </div>
+    <div class="mt-2">
+      <label class="form-label">Comments (비고)</label>
+      <textarea class="calc-input" id="t1_comments" rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: ToD Attribute Sampling ==================== -->
+<div class="tab-pane fade" id="tab2" role="tabpanel">
+
+  <div class="section-card">
+    <h3>문서 정보 (Document Information)</h3>
+    <div class="row g-2">
+      <div class="col-md-3"><label class="form-label">Client Name</label><input type="text" class="calc-input" id="t2_client" style="text-align:left"></div>
+      <div class="col-md-3"><label class="form-label">F/S Period End</label><input type="date" class="calc-input" id="t2_period"></div>
+      <div class="col-md-3"><label class="form-label">Financial Statement Area</label><input type="text" class="calc-input" id="t2_area" style="text-align:left"></div>
+      <div class="col-md-3"><label class="form-label">Test (경영자주장)</label><input type="text" class="calc-input" id="t2_test" style="text-align:left"></div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <h3>A. 속성 정의 (Attribute Definition)</h3>
+    <table class="calc-table">
+      <thead><tr><th></th><th>Attribute 1 (속성 1)</th><th>Attribute 2 (속성 2)</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">Attribute being tested</td>
+            <td><input type="text" class="calc-input" id="t2_attr1_name" style="text-align:left"></td>
+            <td><input type="text" class="calc-input" id="t2_attr2_name" style="text-align:left"></td></tr>
+        <tr><td class="row-label">Assertion tested (주장)</td>
+            <td><input type="text" class="calc-input" id="t2_attr1_assert" style="text-align:left"></td>
+            <td><input type="text" class="calc-input" id="t2_attr2_assert" style="text-align:left"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-card">
+    <h3>B. R-Factor 평가 (Assurance Assessment)</h3>
+    <table class="calc-table">
+      <thead><tr><th style="width:30%">평가 항목</th><th style="width:35%">Attribute 1</th><th style="width:35%">Attribute 2</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">RMM Level</td>
+            <td><select class="calc-select" id="t2_a1_rmm"><option value="2">Normal (2)</option><option value="3">Significant (3)</option></select></td>
+            <td><select class="calc-select" id="t2_a2_rmm"><option value="2">Normal (2)</option><option value="3">Significant (3)</option></select></td></tr>
+        <tr><td class="row-label">TOC Assurance</td>
+            <td><select class="calc-select" id="t2_a1_toc"><option value="0">Not performed (0)</option><option value="2">Performed successfully (2)</option></select></td>
+            <td><select class="calc-select" id="t2_a2_toc"><option value="0">Not performed (0)</option><option value="2">Performed successfully (2)</option></select></td></tr>
+        <tr><td class="row-label">SAP Assurance</td>
+            <td><select class="calc-select" id="t2_a1_sap"><option value="0">None (0)</option><option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option><option value="2">2</option></select></td>
+            <td><select class="calc-select" id="t2_a2_sap"><option value="0">None (0)</option><option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option><option value="2">2</option></select></td></tr>
+        <tr><td class="row-label">Other ToD Assurance</td>
+            <td><select class="calc-select" id="t2_a1_osp"><option value="0">No (0)</option><option value="0.1">Yes (0.1)</option><option value="0.2">Yes (0.2)</option><option value="0.3">Yes (0.3)</option><option value="0.4">Yes (0.4)</option><option value="0.5">Yes (0.5)</option><option value="1">Yes (1.0)</option><option value="1.5">Yes (1.5)</option><option value="2">Yes (2.0)</option><option value="2.5">Yes (2.5)</option></select></td>
+            <td><select class="calc-select" id="t2_a2_osp"><option value="0">No (0)</option><option value="0.1">Yes (0.1)</option><option value="0.2">Yes (0.2)</option><option value="0.3">Yes (0.3)</option><option value="0.4">Yes (0.4)</option><option value="0.5">Yes (0.5)</option><option value="1">Yes (1.0)</option><option value="1.5">Yes (1.5)</option><option value="2">Yes (2.0)</option><option value="2.5">Yes (2.5)</option></select></td></tr>
+        <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Remaining R-factor</td>
+            <td class="calc-output" id="t2_a1_rfactor">2</td>
+            <td class="calc-output" id="t2_a2_rfactor">2</td></tr>
+        <tr class="calc-result-big"><td style="font-weight:700; text-align:left">Attribute Sample Size (속성 샘플수)</td>
+            <td id="t2_a1_sample" style="font-size:1.2em">40</td>
+            <td id="t2_a2_sample" style="font-size:1.2em">40</td></tr>
+      </tbody>
+    </table>
+    <div class="calc-warning" id="t2_warn1">⚠ Attribute 1: Total assurance exceeds or is less than RMM</div>
+    <div class="calc-warning" id="t2_warn2">⚠ Attribute 2: Total assurance exceeds or is less than RMM</div>
+  </div>
+
+  <div class="section-card">
+    <h3>C. 속성 샘플사이즈 참조 테이블</h3>
+    <table class="ref-table" style="max-width:400px">
+      <thead><tr><th>R-factor</th><th>Sample Size</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>0</td></tr>
+        <tr><td>0.1</td><td>1</td></tr>
+        <tr><td>0.2</td><td>3</td></tr>
+        <tr><td>0.3</td><td>5</td></tr>
+        <tr><td>0.4</td><td>7</td></tr>
+        <tr><td>0.5</td><td>10</td></tr>
+        <tr><td>1.0</td><td>20</td></tr>
+        <tr><td>1.5</td><td>30</td></tr>
+        <tr><td>2.0</td><td>40</td></tr>
+        <tr><td>2.5</td><td>50</td></tr>
+        <tr><td>3.0</td><td>60</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-card">
+    <h3>D. 표본선택 (Sample Selection)</h3>
+    <div class="row g-2">
+      <div class="col-md-4"><label class="form-label">Population description</label><input type="text" class="calc-input" id="t2_popDesc" style="text-align:left"></div>
+      <div class="col-md-4"><label class="form-label">Method of selection</label>
+        <select class="calc-select" id="t2_method"><option value="">-- 선택 --</option><option value="random">Random</option><option value="haphazard">Haphazard</option><option value="systematic">Systematic</option></select></div>
+      <div class="col-md-4"><label class="form-label">Estimated population size</label><input type="number" class="calc-input" id="t2_popSize"></div>
+    </div>
+    <div class="mt-2">
+      <label class="form-label">Comments (비고)</label>
+      <textarea class="calc-input" id="t2_comments" rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 3: Error Extrapolation ==================== -->
+<div class="tab-pane fade" id="tab3" role="tabpanel">
+
+  <div class="sub-tabs mb-3">
+    <button class="btn btn-primary btn-sm" onclick="showExtrapSub('numeric')" id="t3_btnNumeric">비층화 추정 (Numeric)</button>
+    <button class="btn btn-outline-primary btn-sm" onclick="showExtrapSub('stratified')" id="t3_btnStrat">층화/MUS 추정 (Stratified)</button>
+  </div>
+
+  <!-- Numeric Extrapolation -->
+  <div id="t3_numeric">
+    <div class="section-card">
+      <h3>비층화 수치 추정 (Numeric Extrapolation)</h3>
+      <p style="color:var(--text-muted); font-size:12px">For non-stratified samples: Interval, Random, Haphazard methods</p>
+      <table class="calc-table">
+        <tbody>
+          <tr><td class="row-label">A. Actual value of errors in representative sample (대표표본 오류금액)</td>
+              <td><input type="number" class="calc-input" id="t3n_errors" step="1" value="0"></td></tr>
+          <tr><td class="row-label">B. Value of sampling items tested (표본항목 금액)</td>
+              <td><input type="number" class="calc-input" id="t3n_sampleVal" step="1"></td></tr>
+          <tr><td class="row-label">C. Value of population tested (모집단 금액, 주요항목 제외)</td>
+              <td><input type="number" class="calc-input" id="t3n_popVal" step="1"></td></tr>
+          <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">D. Extrapolation (추정 오류금액) = A/B × C</td>
+              <td class="calc-output" id="t3n_extrap">0</td></tr>
+          <tr><td class="row-label">E. Total errors in key items (주요항목 오류금액)</td>
+              <td><input type="number" class="calc-input" id="t3n_keyErrors" step="1" value="0"></td></tr>
+          <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">F. Subtotal (소계) = D + E</td>
+              <td class="calc-output" id="t3n_subtotal">0</td></tr>
+          <tr><td class="row-label">G1. Less: Corrected known misstatements (수정된 오류금액)</td>
+              <td><input type="number" class="calc-input" id="t3n_corrKnown" step="1" value="0"></td></tr>
+          <tr><td class="row-label">G2. Less: Corrected projected misstatements</td>
+              <td><input type="number" class="calc-input" id="t3n_corrProj" step="1" value="0"></td></tr>
+          <tr class="calc-result-big"><td style="text-align:left; font-weight:700">H. Best Point Estimate (최선추정치) = F - G</td>
+              <td id="t3n_bestEst" style="font-size:1.2em">0</td></tr>
+          <tr style="background:#edf2f7"><td class="row-label" style="font-weight:600">I. Total Identified Misstatements = A + E - G1</td>
+              <td class="calc-output" id="t3n_totalIdent">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stratified Extrapolation -->
+  <div id="t3_stratified" style="display:none">
+    <div class="section-card">
+      <h3>층화/MUS 추정 (Monetary Stratified Extrapolation)</h3>
+      <p style="color:var(--text-muted); font-size:12px">For Stratified and Monetary Unit Sampling</p>
+      <table class="calc-table" id="t3s_table">
+        <thead>
+          <tr><th>#</th><th>Error Value (오류금액)</th><th>Sample Item Value (표본항목 금액)</th><th>Interval / Stratum Value</th><th>Extrapolated (추정)</th></tr>
+        </thead>
+        <tbody id="t3s_rows">
+        </tbody>
+      </table>
+      <button class="btn btn-outline-primary btn-sm mt-2 no-print" onclick="addStrataRow()">+ 층 추가</button>
+      <button class="btn btn-outline-secondary btn-sm mt-2 no-print" onclick="removeStrataRow()">- 층 제거</button>
+
+      <table class="calc-table mt-3">
+        <tbody>
+          <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Total errors found (오류 합계)</td>
+              <td class="calc-output" id="t3s_totalErr">0</td></tr>
+          <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Total extrapolated (추정 합계)</td>
+              <td class="calc-output" id="t3s_totalExtrap">0</td></tr>
+          <tr><td class="row-label">Key item errors (주요항목 오류)</td>
+              <td><input type="number" class="calc-input" id="t3s_keyErr" step="1" value="0"></td></tr>
+          <tr style="background:var(--result-bg)"><td class="row-label" style="font-weight:700">Subtotal</td>
+              <td class="calc-output" id="t3s_subtotal">0</td></tr>
+          <tr><td class="row-label">Less: Corrected known misstatements</td>
+              <td><input type="number" class="calc-input" id="t3s_corrKnown" step="1" value="0"></td></tr>
+          <tr><td class="row-label">Less: Corrected projected misstatements</td>
+              <td><input type="number" class="calc-input" id="t3s_corrProj" step="1" value="0"></td></tr>
+          <tr class="calc-result-big"><td style="text-align:left; font-weight:700">Best Point Estimate (최선추정치)</td>
+              <td id="t3s_bestEst" style="font-size:1.2em">0</td></tr>
+          <tr style="background:#edf2f7"><td class="row-label" style="font-weight:600">Total Identified Misstatements</td>
+              <td class="calc-output" id="t3s_totalIdent">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 4: IPE Testing ==================== -->
+<div class="tab-pane fade" id="tab4" role="tabpanel">
+
+  <div class="section-card">
+    <h3>IPE Testing Sample Size Calculator</h3>
+    <p style="color:var(--text-muted); font-size:12px">IPE (Information Produced by the Entity) 테스트를 위한 7단계 샘플사이즈 결정 도구입니다.</p>
+
+    <div class="step-card">
+      <span class="step-num">1</span><strong>RMM Level (중요왜곡표시위험 수준)</strong>
+      <span class="step-result" id="t4_res1">-</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_rmm" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="Normal">Normal (일반)</option>
+          <option value="Significant">Significant (유의적)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">2</span><strong>Balance vs Materiality (FSLI 잔액 대비 중요성)</strong>
+      <span class="step-result" id="t4_res2">Base A: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_mat" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="<5x">Less than 5x materiality</option>
+          <option value="<10x">Less than 10x materiality</option>
+          <option value="<20x">Less than 20x materiality</option>
+          <option value=">20x">More than 20x materiality</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">3</span><strong>Volume of Items (항목 수)</strong>
+      <span class="step-result" id="t4_res3">Base B: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_vol" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="<50">Less than 50 items</option>
+          <option value="<300">Less than 300 items</option>
+          <option value="<500">Less than 500 items</option>
+          <option value=">500">More than 500 items</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">4</span><strong>Assertion Direction (주장 방향)</strong>
+      <span class="step-result" id="t4_res4">C: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_assert" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="Existence">Existence (실재성) → MIN(A,B)</option>
+          <option value="Completeness">Completeness (완전성) → MAX(A,B)</option>
+          <option value="Both">Both (양쪽 모두) → MAX(A,B)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">5</span><strong>TOC Assurance (통제테스트 보증)</strong>
+      <span class="step-result" id="t4_res5">D: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_toc" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="No">No (×1.0)</option>
+          <option value="Yes">Yes (×0.2)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">6</span><strong>IPE Complexity (IPE 복잡도)</strong>
+      <span class="step-result" id="t4_res6">E: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_complex" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="simple">Simple listing (단순 목록) → ×0.2</option>
+          <option value="noncomplex">Non-complex logic (비복잡) → ×0.6</option>
+          <option value="complex">Complex / Manually intensive (복잡) → ×1.0</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">7</span><strong>Importance of IPE (IPE 중요도)</strong>
+      <span class="step-result" id="t4_res7">Final: -</span>
+      <div class="mt-2">
+        <select class="calc-select" id="t4_import" style="max-width:300px">
+          <option value="">-- 선택 --</option>
+          <option value="not_important">Not very important (비중요) → ×0.2</option>
+          <option value="important">Important (중요) → ×0.6</option>
+          <option value="very_important">Very important / Sole source (매우 중요) → ×1.0</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="background:var(--primary); color:#fff; padding:16px; border-radius:6px; text-align:center; margin-top:12px">
+      <div style="font-size:14px; font-weight:600">Suggested Sample Size (권장 샘플수)</div>
+      <div style="font-size:2rem; font-weight:700" id="t4_finalResult">-</div>
+    </div>
+
+    <div class="mt-3">
+      <label class="form-label">Applied sample size & rationale (적용 샘플수 및 근거)</label>
+      <textarea class="calc-input" id="t4_comments" rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 5: ToC ==================== -->
+<div class="tab-pane fade" id="tab5" role="tabpanel">
+
+  <div class="sub-tabs mb-3">
+    <button class="btn btn-primary btn-sm" onclick="showTocSub('assess')" id="t5_btnAssess">통제실패 가능성 평가</button>
+    <button class="btn btn-outline-primary btn-sm" onclick="showTocSub('tables')" id="t5_btnTables">샘플사이즈 참조 테이블</button>
+  </div>
+
+  <!-- Assessment -->
+  <div id="t5_assess">
+    <div class="section-card">
+      <h3>Potential for Control Failure Assessment (통제실패 가능성 평가)</h3>
+      <div style="overflow-x:auto">
+      <table class="toc-assess-table">
+        <thead>
+          <tr><th style="width:25%">평가 요소 (Factor)</th><th style="width:22%">Control 1</th><th style="width:22%">Control 2</th><th style="width:22%">Control 3</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="factor-label">Control name (통제명)</td>
+              <td><input type="text" class="calc-input" id="t5_c1_name" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c2_name" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c3_name" style="text-align:left"></td></tr>
+          <tr><td class="factor-label">1. Type of control (통제유형)</td>
+              <td><select class="calc-select" id="t5_c1_f1"><option value="">-</option><option>Manual</option><option>Automated</option><option>Computer dependent</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f1"><option value="">-</option><option>Manual</option><option>Automated</option><option>Computer dependent</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f1"><option value="">-</option><option>Manual</option><option>Automated</option><option>Computer dependent</option></select></td></tr>
+          <tr><td class="factor-label">2. Routine or non-routine (정형/비정형)</td>
+              <td><select class="calc-select" id="t5_c1_f2"><option value="">-</option><option>Routine</option><option>Non-routine</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f2"><option value="">-</option><option>Routine</option><option>Non-routine</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f2"><option value="">-</option><option>Routine</option><option>Non-routine</option></select></td></tr>
+          <tr><td class="factor-label">3. ELC mitigation (ELC 완화 여부)</td>
+              <td><select class="calc-select" id="t5_c1_f3"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f3"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f3"><option value="">-</option><option>Yes</option><option>No</option></select></td></tr>
+          <tr><td class="factor-label">4. Changes in volume/nature (거래량/성격 변화)</td>
+              <td><select class="calc-select" id="t5_c1_f4"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f4"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f4"><option value="">-</option><option>Yes</option><option>No</option></select></td></tr>
+          <tr><td class="factor-label">5. History of errors (오류 이력)</td>
+              <td><select class="calc-select" id="t5_c1_f5"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f5"><option value="">-</option><option>Yes</option><option>No</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f5"><option value="">-</option><option>Yes</option><option>No</option></select></td></tr>
+          <tr><td class="factor-label">6. Competence & authority (역량 및 권한)</td>
+              <td><select class="calc-select" id="t5_c1_f6"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f6"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f6"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+          <tr><td class="factor-label">7. Subjectivity / judgment (주관성/판단)</td>
+              <td><select class="calc-select" id="t5_c1_f7"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f7"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f7"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+          <tr><td class="factor-label">8. Complexity (복잡성)</td>
+              <td><select class="calc-select" id="t5_c1_f8"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f8"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f8"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+          <tr><td class="factor-label">9. Previous testing results (전기 테스트 결과)</td>
+              <td><select class="calc-select" id="t5_c1_f9"><option value="">-</option><option>Deficiency in PY</option><option>No deficiency in PY</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f9"><option value="">-</option><option>Deficiency in PY</option><option>No deficiency in PY</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f9"><option value="">-</option><option>Deficiency in PY</option><option>No deficiency in PY</option></select></td></tr>
+          <tr style="background:#fefcbf"><td class="factor-label" style="font-weight:700">10. Overall Assessment (종합 평가)</td>
+              <td><select class="calc-select" id="t5_c1_f10" style="font-weight:700"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_f10" style="font-weight:700"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_f10" style="font-weight:700"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3>Internal Audit Reliance (내부감사 의존)</h3>
+      <table class="toc-assess-table">
+        <thead><tr><th style="width:25%">항목</th><th>Control 1</th><th>Control 2</th><th>Control 3</th></tr></thead>
+        <tbody>
+          <tr><td class="factor-label">Quantity tested by IA</td>
+              <td><input type="number" class="calc-input" id="t5_c1_ia_qty"></td>
+              <td><input type="number" class="calc-input" id="t5_c2_ia_qty"></td>
+              <td><input type="number" class="calc-input" id="t5_c3_ia_qty"></td></tr>
+          <tr><td class="factor-label">Competence (역량)</td>
+              <td><select class="calc-select" id="t5_c1_ia_comp"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_ia_comp"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_ia_comp"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+          <tr><td class="factor-label">Objectivity (객관성)</td>
+              <td><select class="calc-select" id="t5_c1_ia_obj"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c2_ia_obj"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td>
+              <td><select class="calc-select" id="t5_c3_ia_obj"><option value="">-</option><option>High</option><option>Medium</option><option>Low</option></select></td></tr>
+          <tr><td class="factor-label">Reliance placed (의존 수준)</td>
+              <td><select class="calc-select" id="t5_c1_ia_rel"><option value="">-</option><option>None</option><option>Some</option><option>Max</option></select></td>
+              <td><select class="calc-select" id="t5_c2_ia_rel"><option value="">-</option><option>None</option><option>Some</option><option>Max</option></select></td>
+              <td><select class="calc-select" id="t5_c3_ia_rel"><option value="">-</option><option>None</option><option>Some</option><option>Max</option></select></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <h3>Sample Selection (표본 선택)</h3>
+      <table class="toc-assess-table">
+        <thead><tr><th style="width:25%">항목</th><th>Control 1</th><th>Control 2</th><th>Control 3</th></tr></thead>
+        <tbody>
+          <tr><td class="factor-label">Period operating (운영 기간)</td>
+              <td><input type="text" class="calc-input" id="t5_c1_period" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c2_period" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c3_period" style="text-align:left"></td></tr>
+          <tr><td class="factor-label">Estimated population (추정 모집단)</td>
+              <td><input type="number" class="calc-input" id="t5_c1_pop"></td>
+              <td><input type="number" class="calc-input" id="t5_c2_pop"></td>
+              <td><input type="number" class="calc-input" id="t5_c3_pop"></td></tr>
+          <tr><td class="factor-label">Source of population</td>
+              <td><input type="text" class="calc-input" id="t5_c1_source" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c2_source" style="text-align:left"></td>
+              <td><input type="text" class="calc-input" id="t5_c3_source" style="text-align:left"></td></tr>
+          <tr><td class="factor-label">Sample size (샘플수)</td>
+              <td><input type="number" class="calc-input" id="t5_c1_size"></td>
+              <td><input type="number" class="calc-input" id="t5_c2_size"></td>
+              <td><input type="number" class="calc-input" id="t5_c3_size"></td></tr>
+          <tr><td class="factor-label">Methodology (방법론)</td>
+              <td><select class="calc-select" id="t5_c1_meth"><option value="">-</option><option>Haphazard</option><option>Random</option><option>Systematic</option><option>Judgmental</option></select></td>
+              <td><select class="calc-select" id="t5_c2_meth"><option value="">-</option><option>Haphazard</option><option>Random</option><option>Systematic</option><option>Judgmental</option></select></td>
+              <td><select class="calc-select" id="t5_c3_meth"><option value="">-</option><option>Haphazard</option><option>Random</option><option>Systematic</option><option>Judgmental</option></select></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sample Size Reference Tables -->
+  <div id="t5_tables" style="display:none">
+    <div class="section-card">
+      <h3>ToC Sample Size Reference Tables (통제테스트 샘플사이즈 참조 테이블)</h3>
+      <p style="font-size:12px; color:var(--text-muted)">Interpolation: for populations between tiers, use proportional interpolation. Example: Population 100, High failure, No IA → 8 + (50/300 × 17) ≈ 11</p>
+
+      <h4>Population > 500 (500회 초과 수행 통제)</h4>
+      <table class="ref-table">
+        <thead>
+          <tr><th rowspan="2">Failure<br>Potential</th><th colspan="3">No IA Reliance</th><th colspan="3">Some IA Reliance</th><th colspan="3">Max IA Reliance</th></tr>
+          <tr><th>High</th><th>Med</th><th>Low</th><th>High</th><th>Med</th><th>Low</th><th>High</th><th>Med</th><th>Low</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Sample</td><td>45</td><td>25</td><td>14</td><td>25+2</td><td>14+2</td><td>14 incl 2</td><td>14+3</td><td>14+3</td><td>14 incl 3</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Population ≈ 350 (연간 약 350회)</h4>
+      <table class="ref-table">
+        <thead>
+          <tr><th rowspan="2">Failure<br>Potential</th><th colspan="3">No IA Reliance</th><th colspan="3">Some IA Reliance</th><th colspan="3">Max IA Reliance</th></tr>
+          <tr><th>High</th><th>Med</th><th>Low</th><th>High</th><th>Med</th><th>Low</th><th>High</th><th>Med</th><th>Low</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Sample</td><td>25</td><td>20</td><td>14</td><td>20+1</td><td>14+1</td><td>14 incl 1</td><td>14+2</td><td>14+2</td><td>14 incl 2</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Population ≈ 50 (연간 약 50회)</h4>
+      <table class="ref-table">
+        <thead>
+          <tr><th rowspan="2">Failure<br>Potential</th><th colspan="2">No IA Reliance</th><th colspan="2">Max IA Reliance</th></tr>
+          <tr><th>High</th><th>Low</th><th>High</th><th>Low</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Sample</td><td>8</td><td>5</td><td>5+2 re-perf</td><td>5 incl 2</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Population ≈ 12 (연간 약 12회)</h4>
+      <table class="ref-table">
+        <thead>
+          <tr><th rowspan="2">Failure<br>Potential</th><th colspan="2">No IA Reliance</th><th colspan="2">Max IA Reliance</th></tr>
+          <tr><th>High</th><th>Low</th><th>High</th><th>Low</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Sample</td><td>4</td><td>2</td><td>2+1 re-perf</td><td>2 incl 1</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Population ≈ 4 (연간 약 4회)</h4>
+      <table class="ref-table">
+        <thead>
+          <tr><th rowspan="2">Failure<br>Potential</th><th colspan="2">No IA Reliance</th><th colspan="2">Max IA Reliance</th></tr>
+          <tr><th>High</th><th>Low</th><th>High</th><th>Low</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Sample</td><td>2</td><td>1</td><td>1</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 6: R-factor Reference ==================== -->
+<div class="tab-pane fade" id="tab6" role="tabpanel">
+  <div class="section-card">
+    <h3>R-factor의 이해 및 적용</h3>
+
+    <h4>1. Detection Risk (적발위험)</h4>
+    <div class="formula-box">DR = AR - IR - CR<br>
+      <small>DR: Detection Risk, AR: Audit Risk, IR: Inherent Risk, CR: Control Risk</small>
+    </div>
+    <p>감사위험(AR)은 고유위험(IR), 통제위험(CR), 적발위험(DR)으로 구성됩니다. 적발위험은 실증절차를 통해 관리하며, R-factor는 이를 수치화한 것입니다.</p>
+
+    <h4>2. R-factor 산식</h4>
+    <div class="formula-box">R-factor = -ln(1 - Confidence Level)</div>
+    <p>신뢰수준(Confidence Level)을 R-factor로 변환하는 공식입니다.</p>
+
+    <h4>3. 신뢰수준 → R-factor 변환표</h4>
+    <table class="ref-table" style="max-width:500px">
+      <thead><tr><th>Audit Risk (AR)</th><th>Confidence Level</th><th>R-factor</th></tr></thead>
+      <tbody>
+        <tr><td>5%</td><td>95%</td><td style="font-weight:700">3.0</td></tr>
+        <tr><td>10%</td><td>90%</td><td style="font-weight:700">2.3</td></tr>
+        <tr><td>40%</td><td>60%</td><td style="font-weight:700">0.9</td></tr>
+        <tr><td>60%</td><td>40%</td><td style="font-weight:700">0.5</td></tr>
+      </tbody>
+    </table>
+
+    <h4>4. R-factor → 신뢰수준 역변환</h4>
+    <div class="formula-box">Confidence Level = 1 - e<sup>-R</sup></div>
+    <table class="ref-table" style="max-width:400px">
+      <thead><tr><th>R-factor</th><th>Confidence Level</th></tr></thead>
+      <tbody>
+        <tr><td>3.0</td><td>95%</td></tr>
+        <tr><td>2.0</td><td>86%</td></tr>
+        <tr><td>1.0</td><td>63%</td></tr>
+        <tr><td>0.5</td><td>39%</td></tr>
+      </tbody>
+    </table>
+
+    <h4>5. RMM 수준별 R-factor</h4>
+    <table class="ref-table" style="max-width:400px">
+      <thead><tr><th>RMM Level</th><th>R-factor</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:700">Significant risk (유의적 위험)</td><td style="font-weight:700">3</td><td>95%</td></tr>
+        <tr><td style="font-weight:700">Normal risk (일반 위험)</td><td style="font-weight:700">2</td><td>86%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-card">
+    <h3>R-factor 변환 계산기 (Interactive Converter)</h3>
+    <div class="row g-3">
+      <div class="col-md-5">
+        <label class="form-label"><strong>신뢰수준 → R-factor</strong></label>
+        <div class="input-group">
+          <input type="number" class="calc-input" id="t6_conf" placeholder="예: 95" min="1" max="99.99" step="0.1">
+          <span class="input-group-text">%</span>
+        </div>
+        <div class="calc-output mt-2" id="t6_toR">R-factor: -</div>
+      </div>
+      <div class="col-md-2" style="display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--text-muted)">⇄</div>
+      <div class="col-md-5">
+        <label class="form-label"><strong>R-factor → 신뢰수준</strong></label>
+        <div class="input-group">
+          <input type="number" class="calc-input" id="t6_rfac" placeholder="예: 2.0" min="0.01" max="10" step="0.01">
+        </div>
+        <div class="calc-output mt-2" id="t6_toConf">Confidence: -</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 7: Guidance ==================== -->
+<div class="tab-pane fade" id="tab7" role="tabpanel">
+
+  <!-- ===== Section 1: 앱 사용 가이드 ===== -->
+  <div class="section-card">
+    <h3>📖 앱 사용 가이드 (App Usage Guide)</h3>
+
+    <div class="accordion" id="appGuideAccordion">
+
+      <!-- U0: 빠른 시작 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ug0">빠른 시작 / 워크플로우 개요 (Quick Start)</button></h2>
+        <div id="ug0" class="accordion-collapse collapse show" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p>이 앱은 ISA 530 기반 감사 샘플링의 <strong>샘플수 결정 → 샘플 추출 → 오류 평가</strong> 전 과정을 지원합니다. 아래 워크플로우에서 각 탭을 클릭하면 해당 탭으로 이동합니다.</p>
+
+            <div class="guide-workflow">
+              <div class="wf-label">▸ 경로 1: 대표표본 (Representative Sampling)</div>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab1&quot;]').click()">Tab 1: 샘플수 결정</button>
+              <span class="wf-arrow">→</span>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab8&quot;]').click()">Tab 8: 샘플 추출</button>
+              <span class="wf-arrow">→</span>
+              <span style="font-size:11px; color:var(--text-muted); padding:4px 8px; background:#fff; border-radius:12px; border:1px dashed var(--border)">감사 절차 수행</span>
+              <span class="wf-arrow">→</span>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab3&quot;]').click()">Tab 3: 오류 추정</button>
+            </div>
+
+            <div class="guide-workflow">
+              <div class="wf-label">▸ 경로 2: 속성표본 (Attribute Sampling)</div>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab2&quot;]').click()">Tab 2: 속성 샘플수</button>
+              <span class="wf-arrow">→</span>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab8&quot;]').click()">Tab 8: 샘플 추출</button>
+              <span class="wf-arrow">→</span>
+              <span style="font-size:11px; color:var(--text-muted); padding:4px 8px; background:#fff; border-radius:12px; border:1px dashed var(--border)">감사 절차 수행 → 빈도 평가</span>
+            </div>
+
+            <div class="guide-workflow">
+              <div class="wf-label">▸ 경로 3: 조회서 샘플링 (Confirmation)</div>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab1&quot;]').click()">Tab 1: 샘플수 결정</button>
+              <span class="wf-arrow">→</span>
+              <button class="wf-step" onclick="document.querySelector('[href=&quot;#tab9&quot;]').click()">Tab 9: 조회서 샘플링</button>
+              <span class="wf-arrow">→</span>
+              <span style="font-size:11px; color:var(--text-muted); padding:4px 8px; background:#fff; border-radius:12px; border:1px dashed var(--border)">조회서 발송 → 회수 → 대체절차</span>
+            </div>
+
+            <p style="margin-top:10px"><strong>보조 탭:</strong></p>
+            <ul style="margin:4px 0; padding-left:20px; font-size:12px">
+              <li><strong>Tab 4 (IPE 테스트)</strong> — 피감사인 생성 정보의 신뢰성 테스트 샘플수 (독립적 사용)</li>
+              <li><strong>Tab 5 (통제테스트)</strong> — 내부통제 효과성 평가 → 결과를 Tab 1/2의 TOC에 반영</li>
+              <li><strong>Tab 6 (R-factor 참고)</strong> — R-factor 개념 이해 및 신뢰수준 변환기</li>
+            </ul>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 먼저 Tab 1에서 샘플수를 결정한 뒤, Tab 8에서 모집단 파일을 업로드하여 실제 샘플을 추출하세요. 모든 입력값은 브라우저에 자동 저장됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U1: Tab 1 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug1">Tab 1 — ToD 대표표본 (Representative Sampling)</button></h2>
+        <div id="ug1" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 실증적 세부테스트(Test of Details)의 대표표본 크기를 산정합니다.</p>
+
+            <h5 style="margin-top:12px">A. 모집단 파라미터</h5>
+            <table class="guide-field-table">
+              <tr><th>입력 필드</th><th>설명</th><th>입력 예시</th></tr>
+              <tr><td>Account balance</td><td>계정잔액 총액 (금액 + 항목수)</td><td>10,000,000,000 / 25건</td></tr>
+              <tr><td>Key items</td><td>PM 초과 등 타겟 항목 (금액 + 건수)</td><td>2,000,000,000 / 5건</td></tr>
+              <tr><td>Negative balance</td><td>음수 항목 절대값 합계</td><td>50,000,000</td></tr>
+              <tr><td>Excluded items</td><td>기타 제외 항목 금액</td><td>0</td></tr>
+              <tr><td>Overall Materiality</td><td>전체 중요성 금액</td><td>500,000,000</td></tr>
+              <tr><td>Performance Materiality</td><td>수행중요성 (PM)</td><td>375,000,000</td></tr>
+            </table>
+            <p><code>Sampled balance</code> = Account balance - Key items - Negative - Excluded (자동 계산)</p>
+
+            <h5 style="margin-top:12px">B. R-Factor 평가</h5>
+            <table class="guide-field-table">
+              <tr><th>평가 항목</th><th>선택지</th><th>R-factor 값</th></tr>
+              <tr><td>RMM Level</td><td>Normal(2) / Significant(3)</td><td>2 또는 3</td></tr>
+              <tr><td>TOC Assurance</td><td>미수행(0) / 수행(2)</td><td>0 또는 2</td></tr>
+              <tr><td>SAP Assurance</td><td>None(0) ~ Significant(2)</td><td>0 ~ 2</td></tr>
+              <tr><td>Other Substantive</td><td>No(0) ~ Yes(2.5)</td><td>0 ~ 2.5</td></tr>
+            </table>
+            <div class="formula-box">Substantive R-factor = MAX(0, RMM - TOC - SAP - OSP)</div>
+
+            <h5 style="margin-top:12px">C. 샘플사이즈 산식</h5>
+            <div class="formula-box">Sample Size = (Sampled Balance × R-factor / PM) × Variability Multiplier + Key Items</div>
+            <p><strong>Variability:</strong> No(×1.25배) 또는 Yes(×1.0배). 모집단 변동성이 낮다고 판단될 때 Yes를 선택합니다.</p>
+
+            <h5 style="margin-top:12px">D. 표본선택 방법</h5>
+            <p>Monetary Unit(MUS) 선택 시 Monetary Interval(화폐 간격)이 자동 표시됩니다.</p>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> R-factor가 0이 되면 샘플수가 0건입니다. 이는 통제테스트 등으로 충분한 보증을 확보한 경우입니다.</div>
+            <div class="guide-warning"><strong>⚠️ 주의:</strong> PM은 반드시 0보다 큰 값을 입력하세요. PM=0이면 산식에서 나누기 오류가 발생합니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U2: Tab 2 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug2">Tab 2 — ToD 속성표본 (Attribute Sampling)</button></h2>
+        <div id="ug2" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> Accept/Reject 기반 테스트의 샘플수를 결정합니다. (예: 매출 cut-off 테스트)</p>
+            <p><strong>대표표본과의 차이:</strong> 금액 추정이 아닌 빈도(rate) 기반 평가입니다. 오류 건수로 모집단을 평가합니다.</p>
+
+            <h5 style="margin-top:12px">사용 절차</h5>
+            <ol class="guide-step-list">
+              <li><strong>속성 정의 (Section A):</strong> 최대 2개 속성을 동시에 정의합니다. 속성명과 경영진 주장(Assertion)을 입력합니다.</li>
+              <li><strong>R-factor 평가 (Section B):</strong> 각 속성별로 독립적으로 RMM/TOC/SAP/OSP를 평가합니다.</li>
+              <li><strong>샘플수 자동 결정:</strong> R-factor에 따라 고정 테이블에서 샘플수가 결정됩니다.</li>
+              <li><strong>표본선택 (Section D):</strong> 모집단 설명과 선택 방법을 기록합니다.</li>
+            </ol>
+
+            <h5 style="margin-top:12px">R-factor → 샘플수 참조표</h5>
+            <table class="guide-field-table">
+              <tr><th>R-factor</th><th>0</th><th>0.5</th><th>1.0</th><th>1.5</th><th>2.0</th><th>2.5</th><th>3.0</th></tr>
+              <tr><td>샘플수</td><td>0</td><td>10</td><td>20</td><td>30</td><td>40</td><td>50</td><td>60</td></tr>
+            </table>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 속성표본은 Tab 3 오류추정을 사용하지 않습니다. 발견된 오류 건수를 기반으로 모집단 평가를 수행합니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U3: Tab 3 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug3">Tab 3 — 오류금액 추정 (Error Extrapolation)</button></h2>
+        <div id="ug3" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 대표표본에서 발견된 오류를 모집단 전체로 확장(extrapolate)합니다.</p>
+
+            <h5 style="margin-top:12px">모드 선택 기준</h5>
+            <table class="guide-field-table">
+              <tr><th>추출 방법</th><th>추정 모드</th></tr>
+              <tr><td>Random / Interval / Haphazard</td><td><strong>비층화 추정</strong> (Numeric)</td></tr>
+              <tr><td>Stratified / MUS</td><td><strong>층화/MUS 추정</strong> (Stratified)</td></tr>
+            </table>
+
+            <h5 style="margin-top:12px">비층화 추정 흐름</h5>
+            <div class="formula-box">A(표본 오류) → B(표본 금액) → C(모집단 금액) → D = A/B × C (추정 오류)<br>→ E(Key Item 오류) → F(소계) → G(수정) → H = F - G (최선추정치)</div>
+
+            <h5 style="margin-top:12px">층화/MUS 추정</h5>
+            <p>각 층(행)별로 <code>오류금액 / 표본항목금액 × 간격</code>을 산출하고, 합계를 구합니다. '+ 층 추가' 버튼으로 행을 추가합니다.</p>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 오류가 없으면(A=0) 추정값도 0이 되어 감사결론은 '합격'입니다.</div>
+            <div class="guide-warning"><strong>⚠️ 주의:</strong> 최선추정치(Best Point Estimate)가 PM을 초과하면 추가 감사절차가 필요합니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U4: Tab 4 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug4">Tab 4 — IPE 테스트 (IPE Testing)</button></h2>
+        <div id="ug4" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 피감사인이 생성한 정보(Information Produced by the Entity)의 신뢰성 테스트 샘플수를 결정합니다.</p>
+            <p>이 탭은 다른 탭과 <strong>독립적으로</strong> 사용됩니다. Tab 1과 별개의 계산입니다.</p>
+
+            <h5 style="margin-top:12px">7단계 의사결정 트리</h5>
+            <ol class="guide-step-list">
+              <li><strong>RMM Level:</strong> Normal 또는 Significant 선택</li>
+              <li><strong>Balance vs Materiality:</strong> FSLI 잔액이 PM의 몇 배인지 구간 선택 → 기본값(A) 결정</li>
+              <li><strong>Volume of Items:</strong> 모집단 항목 수 구간 선택 → 기본값(B) 결정</li>
+              <li><strong>Assertion Direction:</strong> Existence(MIN) / Completeness(MAX) / Both(MAX) → A와 B 중 선택</li>
+              <li><strong>TOC Assurance:</strong> 통제테스트 수행 여부. Yes = ×0.2배 감소</li>
+              <li><strong>IPE Complexity:</strong> Simple(×0.2) / Non-complex(×0.6) / Complex(×1.0)</li>
+              <li><strong>Importance of IPE:</strong> 최종 중요도 배수 적용</li>
+            </ol>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 최종 결과는 참고치이며, 감사인의 전문적 판단으로 조정할 수 있습니다. Applied sample size에 최종 수를 기입하세요.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U5: Tab 5 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug5">Tab 5 — 통제테스트 ToC (Test of Controls)</button></h2>
+        <div id="ug5" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 내부통제 운영의 효과성을 테스트합니다. 결과는 Tab 1/2의 TOC Assurance에 반영합니다.</p>
+
+            <h5 style="margin-top:12px">하위 탭 1: 통제실패 가능성 평가</h5>
+            <p>최대 3개 통제를 동시에 평가합니다. 각 통제별 9개 요소를 평가하여 종합 판단(High/Medium/Low)을 도출합니다:</p>
+            <table class="guide-field-table">
+              <tr><th>평가 요소</th><th>설명</th></tr>
+              <tr><td>Type of control</td><td>자동/수동 통제 구분</td></tr>
+              <tr><td>Routine/Non-routine</td><td>일상적/비일상적 거래</td></tr>
+              <tr><td>ELC mitigation</td><td>Entity Level Control 보완 여부</td></tr>
+              <tr><td>Changes</td><td>당기 변경사항 존재 여부</td></tr>
+              <tr><td>Error history</td><td>과거 오류 이력</td></tr>
+              <tr><td>Competence</td><td>담당자 역량</td></tr>
+              <tr><td>Subjectivity</td><td>주관적 판단 필요도</td></tr>
+              <tr><td>Complexity</td><td>통제의 복잡도</td></tr>
+              <tr><td>Previous results</td><td>이전 연도 테스트 결과</td></tr>
+            </table>
+
+            <h5 style="margin-top:12px">하위 탭 2: 샘플사이즈 참조 테이블</h5>
+            <p>모집단 규모(500+, ~350, ~50, ~12, ~4회)별 × 통제실패 가능성(High/Medium/Low) × 내부감사 의존도(None/Some/Max)로 샘플수를 조회합니다.</p>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 통제테스트 결과가 양호하면 Tab 1에서 TOC Assurance를 '2'로 설정하여 R-factor를 줄일 수 있습니다. 이는 실증테스트 샘플수를 크게 감소시킵니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U6: Tab 6 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug6">Tab 6 — R-factor 참고 (R-factor Reference)</button></h2>
+        <div id="ug6" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> R-factor의 이론적 배경을 이해하고, 신뢰수준과의 변환을 수행합니다.</p>
+
+            <h5 style="margin-top:12px">핵심 개념</h5>
+            <div class="formula-box">Detection Risk (DR) = Audit Risk (AR) - Inherent Risk (IR) - Control Risk (CR)<br>R-factor = -ln(1 - Confidence Level)</div>
+
+            <h5 style="margin-top:12px">변환 계산기 사용법</h5>
+            <table class="guide-field-table">
+              <tr><th>방향</th><th>입력</th><th>출력</th><th>예시</th></tr>
+              <tr><td>좌측</td><td>신뢰수준 (%)</td><td>R-factor</td><td>86% → 1.97</td></tr>
+              <tr><td>우측</td><td>R-factor</td><td>신뢰수준 (%)</td><td>2.0 → 86.5%</td></tr>
+            </table>
+
+            <h5 style="margin-top:12px">주요 참조값</h5>
+            <table class="guide-field-table">
+              <tr><th>R-factor</th><th>0.7</th><th>1.0</th><th>1.5</th><th>2.0</th><th>2.3</th><th>3.0</th></tr>
+              <tr><td>신뢰수준</td><td>50%</td><td>63%</td><td>78%</td><td>86%</td><td>90%</td><td>95%</td></tr>
+            </table>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> R-factor 2.0은 약 86% 신뢰수준에 해당하며, 대부분의 일반 위험 계정에 적용됩니다 (RMM=Normal, TOC 미수행).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U7: Tab 8 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug7">Tab 8 — 샘플 추출 (Sample Extraction)</button></h2>
+        <div id="ug7" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 모집단 파일을 업로드하고 실제 샘플을 추출합니다.</p>
+
+            <h5 style="margin-top:12px">3단계 절차</h5>
+            <ol class="guide-step-list">
+              <li><strong>모집단 업로드:</strong> Excel(.xlsx/.xls) 또는 CSV 파일을 드래그&드롭. 다중 시트 파일은 시트 선택 가능. 상위 10행 미리보기 제공.</li>
+              <li><strong>샘플링 설정:</strong> 방법 선택, 샘플 수 입력, 금액 컬럼 지정 (필요 시). 'Tab 1 결과 적용' 버튼으로 산정된 샘플수를 자동 연동할 수 있습니다.</li>
+              <li><strong>결과 확인 및 다운로드:</strong> 추출 통계 확인 후 Excel 다운로드. '샘플만'(선택된 항목만) 또는 '전체+표시'(모집단에 Sampled 컬럼 추가) 중 선택.</li>
+            </ol>
+
+            <h5 style="margin-top:12px">5가지 샘플링 방법 비교</h5>
+            <table class="guide-field-table">
+              <tr><th>방법</th><th>적합한 경우</th><th>금액 컬럼</th><th>특징</th></tr>
+              <tr><td><strong>Random</strong></td><td>일반적 상황</td><td>불필요</td><td>Fisher-Yates 알고리즘</td></tr>
+              <tr><td><strong>Interval</strong></td><td>체계적 추출</td><td>불필요</td><td>시작점 + 고정 간격</td></tr>
+              <tr><td><strong>Haphazard</strong></td><td>소규모 모집단</td><td>불필요</td><td>무작위 유사 선택</td></tr>
+              <tr><td><strong>Stratified</strong></td><td>금액 편차 큰 모집단</td><td><strong>필수</strong></td><td>층별 비례 배분</td></tr>
+              <tr><td><strong>MUS</strong></td><td>금액 비례 추출</td><td><strong>필수</strong></td><td>금액 큰 항목 우선 선택</td></tr>
+            </table>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> Tab 1에서 산정한 샘플수를 'Tab 1 결과 적용' 버튼으로 바로 가져올 수 있습니다.</div>
+            <div class="guide-warning"><strong>⚠️ 주의:</strong> Stratified/MUS 방법 선택 시 반드시 금액 컬럼을 지정하세요. 미지정 시 실행되지 않습니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U8: Tab 9 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug8">Tab 9 — 조회서 샘플링 (Confirmation Sampling)</button></h2>
+        <div id="ug8" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+            <p><strong>목적:</strong> 채권(매출채권)과 채무(매입채무) 조회서 발송 대상을 샘플링합니다. 채권과 채무는 감사 주장이 다르므로 별도로 추출합니다.</p>
+
+            <h5 style="margin-top:12px">채권 vs 채무 비교</h5>
+            <table class="guide-field-table">
+              <tr><th></th><th style="color:#2b6cb0">채권 (Receivable)</th><th style="color:#c53030">채무 (Payable)</th></tr>
+              <tr><td><strong>주장</strong></td><td>실재성 (Existence)</td><td>완전성 (Completeness)</td></tr>
+              <tr><td><strong>위험</strong></td><td>과대계상 위험</td><td>과소계상 위험</td></tr>
+              <tr><td><strong>초점</strong></td><td>큰 금액 집중</td><td>잔액 0 거래처도 고려</td></tr>
+              <tr><td><strong>권장 방법</strong></td><td>MUS (금액 비례)</td><td>Random (건수 기반)</td></tr>
+            </table>
+
+            <h5 style="margin-top:12px">사용 절차</h5>
+            <ol class="guide-step-list">
+              <li><strong>공통 설정:</strong> Performance Materiality(PM)와 조회서 발송 기준일을 입력합니다. PM은 Tab 1과 동일하게 입력하세요.</li>
+              <li><strong>파일 업로드:</strong> 채권/채무 모집단을 각각 업로드하고, 거래처명/잔액 컬럼을 지정합니다.</li>
+              <li><strong>Key Items 설정:</strong> PM 초과 항목 자동 선택 옵션을 활성화합니다. 장기 미수 항목 포함도 설정 가능합니다.</li>
+              <li><strong>샘플 수 입력:</strong> Tab 1에서 산정한 수(Key Items 제외)를 입력합니다.</li>
+              <li><strong>샘플 추출 및 다운로드:</strong> 개별 또는 채권+채무 통합 Excel을 다운로드합니다.</li>
+            </ol>
+
+            <div class="guide-tip"><strong>💡 팁:</strong> 채권은 MUS로, 채무는 Random으로 추출하는 것이 감사 표준에 부합합니다. 채권은 과대계상, 채무는 과소계상 위험에 초점을 맞추기 때문입니다.</div>
+            <div class="guide-warning"><strong>⚠️ 주의:</strong> MUS 알고리즘은 금액 분포에 따라 요청한 샘플 수보다 실제 추출 건수가 적을 수 있습니다. 이 경우 경고 메시지가 표시됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- U9: FAQ -->
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ug9">FAQ / 실무 팁 (Frequently Asked Questions)</button></h2>
+        <div id="ug9" class="accordion-collapse collapse" data-bs-parent="#appGuideAccordion">
+          <div class="accordion-body">
+
+            <p><strong>Q1. 샘플수가 0건이 나옵니다.</strong></p>
+            <p>R-factor가 0인 경우입니다. TOC + SAP + OSP의 합이 RMM 이상이면 R-factor = 0이 되어 실증테스트 없이도 충분한 보증이 확보된 것입니다. 의도된 결과가 맞는지 확인하세요.</p>
+
+            <p style="margin-top:12px"><strong>Q2. Tab 1 결과와 Tab 8/9의 실제 추출 수가 다릅니다.</strong></p>
+            <p>Tab 1은 <strong>이론적 샘플수 산정</strong>이고, Tab 8/9는 <strong>실제 추출</strong>입니다. MUS의 경우 금액 분포에 따라 실제 추출 건수가 달라질 수 있습니다. Tab 8에서 'Tab 1 결과 적용' 버튼을 사용하면 자동으로 연동됩니다.</p>
+
+            <p style="margin-top:12px"><strong>Q3. MUS에서 요청 수보다 적게 추출됩니다.</strong></p>
+            <p>MUS는 금액 기준 간격(Sampling Interval)으로 선택하므로, 금액이 특정 항목에 집중되어 있으면 고유 선택 건수가 줄어듭니다. 금액이 간격보다 큰 항목은 항상 100% 선택됩니다. 이런 항목은 Key Item으로 분류하는 것이 적절합니다.</p>
+
+            <p style="margin-top:12px"><strong>Q4. Variability multiplier는 언제 Yes로 하나요?</strong></p>
+            <p>모집단의 변동성이 낮다고 판단될 때 선택합니다. 사전 분석적 절차(기대값과 실제값 비교)를 수행하여 모집단이 안정적이라고 판단되면 Yes(×1.0)를 선택할 수 있습니다. 확실하지 않으면 No(×1.25)를 유지하세요.</p>
+
+            <p style="margin-top:12px"><strong>Q5. 비층화 vs 층화 추정 중 어떤 것을 사용하나요?</strong></p>
+            <table class="guide-field-table">
+              <tr><th>추출 방법</th><th>추정 모드</th></tr>
+              <tr><td>Random / Interval / Haphazard</td><td>비층화 (Numeric)</td></tr>
+              <tr><td>Stratified / MUS</td><td>층화/MUS (Stratified)</td></tr>
+            </table>
+
+            <p style="margin-top:12px"><strong>Q6. 인쇄 기능은 어떻게 작동하나요?</strong></p>
+            <p>우측 상단 '인쇄' 버튼 클릭 시, <strong>현재 활성 탭만</strong> A4 포맷으로 인쇄됩니다. 브라우저의 인쇄 다이얼로그를 통해 PDF로도 저장 가능합니다.</p>
+
+            <p style="margin-top:12px"><strong>Q7. 입력 데이터는 어디에 저장되나요?</strong></p>
+            <p>브라우저의 <strong>localStorage</strong>에 탭별로 자동 저장됩니다. 같은 브라우저에서 다시 열면 이전 입력값이 복원됩니다. '현재 탭 초기화' 버튼으로 삭제할 수 있습니다. 파일 업로드 데이터(Tab 8, 9)는 저장되지 않으므로 매번 다시 업로드해야 합니다.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== Section 2: 감사 샘플링 방법론 (기존 유지 + 확장) ===== -->
+  <div class="section-card">
+    <h3>📚 감사 샘플링 방법론 (Audit Sampling Methodology)</h3>
+
+    <div class="accordion" id="guidanceAccordion">
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g1">A. Statistical vs. Non-statistical Sampling (통계적 vs. 비통계적 샘플링)</button></h2>
+        <div id="g1" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>Non-statistical sampling</strong>은 감사인의 전문적 판단에 의존하는 방법입니다. 샘플 결과를 수학적으로 모집단 전체에 확장(extrapolate)하기 어렵지만, 실무적으로 널리 사용됩니다.</p>
+            <p><strong>Statistical sampling</strong>은 확률이론에 기반하여 샘플을 선택하고 결과를 평가합니다. 샘플링 위험을 정량적으로 측정할 수 있습니다.</p>
+            <p>두 방법 모두 적절하게 설계되고 실행된다면 충분하고 적절한 감사증거를 제공할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g2">B. Key Items (주요항목 선택)</button></h2>
+        <div id="g2" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>Key items</strong>은 위험 기반으로 선택되는 타겟 샘플링 항목입니다. 다음과 같은 경우 주요항목으로 선택합니다:</p>
+            <ul>
+              <li>개별적으로 중요한 금액의 항목 (예: PM 초과 항목)</li>
+              <li>특정 위험 특성이 있는 항목 (비정상 거래, 관계자 거래 등)</li>
+              <li>오류가 의심되는 항목</li>
+            </ul>
+            <p>주요항목은 대표표본과 별도로 100% 테스트되며, 샘플사이즈 산정 시 모집단에서 제외됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g3">C. Dual Purpose Tests (이중 목적 테스트)</button></h2>
+        <div id="g3" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>Dual purpose tests</strong>는 하나의 테스트로 통제테스트(ToC)와 세부테스트(ToD)를 동시에 수행하는 것입니다.</p>
+            <p>이중 목적 테스트의 샘플사이즈는 각 목적의 요구 샘플수 중 큰 값을 사용합니다. 즉, ToC 샘플수와 ToD 샘플수 중 더 큰 샘플을 선택합니다.</p>
+            <p>이중 목적 테스트에서 통제 편차(deviation)를 발견한 경우, ToD의 R-factor 평가에서 TOC assurance를 줄여야 합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g4">D. Attribute Sampling (속성 표본 추출)</button></h2>
+        <div id="g4" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>Attribute sampling</strong>은 Accept/Reject 방식의 테스트에 사용됩니다. 대표적으로 매출 cut-off 테스트 등에 적용합니다.</p>
+            <p>속성표본의 샘플사이즈는 R-factor를 기반으로 고정 테이블에서 결정됩니다:</p>
+            <ul>
+              <li>R=0.5 → 10건, R=1.0 → 20건, R=2.0 → 40건, R=3.0 → 60건</li>
+            </ul>
+            <p>오류 발견 시 해당 속성의 모집단 전체에 대한 결론에 영향을 줍니다. 속성표본에서는 금액 추정(extrapolation)이 아닌 빈도(rate) 기반으로 평가합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g5">E. Error Extrapolation (오류금액 추정)</button></h2>
+        <div id="g5" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>Error extrapolation</strong>은 대표표본에서 발견된 오류를 모집단 전체로 확장하는 과정입니다.</p>
+            <h5>비층화 표본 (Numeric Extrapolation)</h5>
+            <div class="formula-box">추정 오류 = (표본 오류금액 / 표본 가치) × 모집단 가치</div>
+            <h5>층화/MUS 표본 (Stratified Extrapolation)</h5>
+            <div class="formula-box">각 층 추정 = (오류금액 / 표본항목 금액) × 간격 또는 층 가치</div>
+            <p><strong>Best Point Estimate (최선추정치)</strong>는 추정 오류에서 수정된 왜곡표시를 차감한 금액으로, 이를 PM과 비교하여 감사결론을 도출합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g6">F. Test of Controls Sampling (통제테스트 샘플링)</button></h2>
+        <div id="g6" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>통제테스트(ToC)</strong>는 내부통제가 설계된 대로 효과적으로 운영되고 있는지를 평가하는 절차입니다.</p>
+            <h5>ToC vs ToD 샘플링의 차이</h5>
+            <table class="guide-field-table">
+              <tr><th></th><th>통제테스트 (ToC)</th><th>세부테스트 (ToD)</th></tr>
+              <tr><td><strong>목적</strong></td><td>통제 효과성 평가</td><td>금액적 왜곡표시 검출</td></tr>
+              <tr><td><strong>샘플 기준</strong></td><td>건수(빈도) 기반</td><td>금액 기반</td></tr>
+              <tr><td><strong>평가 방식</strong></td><td>편차율(Deviation rate)</td><td>오류금액 추정</td></tr>
+              <tr><td><strong>결과 활용</strong></td><td>TOC Assurance → R-factor 감소</td><td>직접적 감사결론</td></tr>
+            </table>
+            <p><strong>통제실패 가능성(Potential for Control Failure)</strong>은 9개 요소를 종합하여 High/Medium/Low로 평가합니다. 이 평가 결과와 모집단 규모(통제 수행 빈도)에 따라 샘플수가 결정됩니다.</p>
+            <p><strong>내부감사 의존(IA Reliance):</strong> 내부감사 결과를 활용할 수 있는 경우, 외부감사인의 직접 테스트 샘플수를 줄일 수 있습니다. 의존 수준은 None/Some/Max로 구분됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g7">G. IPE Testing Principles (IPE 테스트 원칙)</button></h2>
+        <div id="g7" class="accordion-collapse collapse" data-bs-parent="#guidanceAccordion">
+          <div class="accordion-body">
+            <p><strong>IPE (Information Produced by the Entity)</strong>란 피감사인이 생성한 정보로, 감사인이 감사절차에 사용하는 데이터입니다. 예를 들어 AR aging report, 재고 리스트, 매출 상세내역 등이 해당합니다.</p>
+            <h5>IPE 테스트가 필요한 이유</h5>
+            <p>감사인이 사용하는 데이터의 정확성과 완전성이 확인되지 않으면, 해당 데이터에 기반한 감사결론의 신뢰도가 저하됩니다. ISA 500은 감사증거로 사용되는 정보의 신뢰성 평가를 요구합니다.</p>
+            <h5>7단계 결정 프레임워크</h5>
+            <p>IPE 샘플수는 다음 요소들의 상호작용으로 결정됩니다:</p>
+            <ul>
+              <li><strong>위험 수준 (RMM):</strong> Significant RMM은 기본 샘플수를 1.5배 증가</li>
+              <li><strong>금액 규모:</strong> PM 대비 잔액이 클수록 기본값 증가</li>
+              <li><strong>항목 수:</strong> 모집단이 클수록 기본값 증가</li>
+              <li><strong>방향성:</strong> Existence(MIN) vs Completeness(MAX)</li>
+              <li><strong>통제/복잡도/중요도:</strong> 배수(multiplier)로 최종 조정</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== TAB 8: Sample Extraction ==================== -->
+<div class="tab-pane fade" id="tab8" role="tabpanel">
+
+  <div class="section-card">
+    <h3>&#x1f4c2; Step 1. 모집단 업로드 (Upload Population Data)</h3>
+    <div class="upload-zone" id="t8_dropZone" onclick="document.getElementById('t8_fileInput').click()">
+      <div class="upload-icon">&#x1f4c4;</div>
+      <p><strong>파일을 드래그 & 드롭</strong>하거나 클릭하여 선택하세요</p>
+      <p>지원 형식: .xlsx, .xls, .csv</p>
+      <input type="file" id="t8_fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div id="t8_fileInfo" style="display:none">
+      <div class="file-info">
+        <span class="file-name" id="t8_fileName"></span>
+        <span class="file-meta" id="t8_fileMeta"></span>
+        <button class="btn-remove" onclick="clearUpload()" title="파일 제거">&times;</button>
+      </div>
+    </div>
+
+    <div id="t8_sheetSelect" style="display:none; margin: 8px 0;">
+      <label class="form-label" style="font-weight:600">시트 선택:</label>
+      <select class="calc-select" id="t8_sheet" style="max-width:300px"></select>
+    </div>
+
+    <div id="t8_preview" style="display:none; margin-top:12px">
+      <h4>데이터 미리보기 (상위 10행)</h4>
+      <div class="data-preview" id="t8_previewTable"></div>
+    </div>
+  </div>
+
+  <div class="section-card" id="t8_configSection" style="display:none">
+    <h3>&#x2699; Step 2. 샘플링 설정 (Sampling Configuration)</h3>
+
+    <div class="config-grid">
+      <div class="config-item">
+        <label>샘플링 방법 (Sampling Method)</label>
+        <select class="calc-select" id="t8_method" onchange="onMethodChange()">
+          <option value="random">Random (무작위 추출)</option>
+          <option value="interval">Interval / Systematic (체계적 추출)</option>
+          <option value="haphazard">Haphazard (임의 추출)</option>
+          <option value="stratified">Stratified (층화 추출)</option>
+          <option value="mus">MUS - Monetary Unit Sampling (화폐단위 추출)</option>
+        </select>
+      </div>
+      <div class="config-item">
+        <label>샘플 수 (Sample Size)</label>
+        <input type="number" class="calc-input" id="t8_sampleSize" min="1" step="1" placeholder="예: 45">
+        <div class="mus-help">Tab 1(대표표본) 결과: <strong id="t8_tab1Size">-</strong>건</div>
+        <button class="btn btn-outline-primary btn-sm mt-1 no-print" onclick="applyTab1Size()" style="font-size:11px">Tab 1 결과 적용 &rarr;</button>
+      </div>
+      <div class="config-item">
+        <label>금액 컬럼 (Amount Column) <span class="info-tip" data-tip="Interval, Stratified, MUS에 필요. 금액이 포함된 컬럼 선택">?</span></label>
+        <select class="calc-select" id="t8_amtCol"><option value="">-- 선택 --</option></select>
+      </div>
+      <div class="config-item">
+        <label>시작 번호 (Start Row for Interval) <span class="info-tip" data-tip="Interval: 첫 번째 선택 위치. 미입력시 랜덤">?</span></label>
+        <input type="number" class="calc-input" id="t8_startRow" min="1" step="1" placeholder="자동 (랜덤)">
+      </div>
+    </div>
+
+    <!-- MUS specific config -->
+    <div id="t8_musConfig" style="display:none" class="strat-config mt-2">
+      <h5>MUS (화폐단위 추출) 추가 설정</h5>
+      <div class="config-grid">
+        <div class="config-item">
+          <label>Sampling Interval (추출 간격)</label>
+          <input type="number" class="calc-input" id="t8_musInterval" placeholder="자동 계산">
+          <div class="mus-help">자동: 총 금액 / 샘플수. 수동 입력 가능</div>
+        </div>
+        <div class="config-item">
+          <label>Random Start (시작점)</label>
+          <input type="number" class="calc-input" id="t8_musStart" placeholder="자동 (1~간격 사이 랜덤)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stratified specific config -->
+    <div id="t8_stratConfig" style="display:none" class="strat-config mt-2">
+      <h5>층화 추출 (Stratified) 추가 설정</h5>
+      <div class="config-grid">
+        <div class="config-item">
+          <label>층 구분 방법</label>
+          <select class="calc-select" id="t8_stratMethod">
+            <option value="equal_range">금액 범위 균등 분할</option>
+            <option value="quantile">수량 균등 분할 (분위수)</option>
+            <option value="custom">직접 경계값 입력</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label>층 수 (Number of Strata)</label>
+          <input type="number" class="calc-input" id="t8_stratNum" min="2" max="10" value="3">
+        </div>
+      </div>
+      <div id="t8_customBounds" style="display:none; margin-top:8px">
+        <label class="form-label" style="font-size:12px">층 경계값 (쉼표로 구분, 예: 100000,500000,1000000)</label>
+        <input type="text" class="calc-input" id="t8_stratBounds" style="text-align:left" placeholder="100000,500000,1000000">
+      </div>
+    </div>
+
+    <div style="margin-top:16px; text-align:center">
+      <button class="btn btn-primary btn-lg" onclick="executeSampling()" style="background:var(--primary); border-color:var(--primary); padding:10px 40px; font-size:14px">
+        &#x1f3af; 샘플 추출 실행
+      </button>
+    </div>
+  </div>
+
+  <div class="section-card" id="t8_resultSection" style="display:none">
+    <h3>&#x1f4ca; Step 3. 추출 결과 (Sampling Result)</h3>
+
+    <div class="sample-stats" id="t8_stats"></div>
+
+    <div style="margin:12px 0; display:flex; gap:8px; align-items:center">
+      <button class="btn btn-primary btn-sm no-print" onclick="downloadSampleExcel()" style="background:var(--primary)">&#x1f4e5; Excel 다운로드</button>
+      <button class="btn btn-outline-primary btn-sm no-print" onclick="downloadSampleExcel(true)">&#x1f4e5; 전체 모집단 + 표시 다운로드</button>
+      <span style="font-size:11px; color:var(--text-muted)">추출된 항목이 노란색으로 표시됩니다</span>
+    </div>
+
+    <div id="t8_resultSummary" style="margin-bottom:12px"></div>
+
+    <div style="max-height:500px; overflow:auto; border:1px solid var(--border); border-radius:4px">
+      <table class="table table-sm table-bordered sample-result-table" id="t8_resultTable">
+        <thead id="t8_resultHead"></thead>
+        <tbody id="t8_resultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== TAB 9: Confirmation Sampling ==================== -->
+<div class="tab-pane fade" id="tab9" role="tabpanel">
+
+  <div class="section-card">
+    <h3>&#x1f4e8; 채권채무조회서 샘플링 (Confirmation Sampling)</h3>
+    <p style="font-size:12px; color:var(--text-muted)">
+      채권(매출채권)과 채무(매입채무) 모집단을 각각 업로드하여 별도로 샘플링합니다.
+      채권은 <strong>실재성(Existence)</strong>, 채무는 <strong>완전성(Completeness)</strong> 주장에 초점을 맞춥니다.
+    </p>
+  </div>
+
+  <!-- ===== Settings ===== -->
+  <div class="section-card">
+    <h3>&#x2699; 공통 설정 (Common Settings)</h3>
+    <div class="config-grid">
+      <div class="config-item">
+        <label>Performance Materiality (수행중요성)</label>
+        <input type="number" class="calc-input" id="t9_pm" placeholder="예: 50,000,000">
+        <div class="mus-help">Tab 1의 PM과 동일하게 입력하세요</div>
+      </div>
+      <div class="config-item">
+        <label>조회서 발송 기준일 (Confirmation Date)</label>
+        <input type="date" class="calc-input" id="t9_confDate">
+      </div>
+    </div>
+  </div>
+
+  <div class="dual-result">
+
+  <!-- ===== RECEIVABLE (채권) ===== -->
+  <div class="confirm-section receivable">
+    <h4><span class="badge-recv">채권 Receivable</span> 매출채권 샘플링</h4>
+    <p style="font-size:11px; color:var(--text-muted)">주장: 실재성(Existence) - 과대계상 위험 → 큰 금액 집중</p>
+
+    <div class="confirm-upload-zone" id="t9r_dropZone" onclick="document.getElementById('t9r_fileInput').click()">
+      <div style="font-size:1.5rem">&#x1f4c4;</div>
+      <p style="margin:4px 0"><strong>채권 모집단</strong> 파일 업로드</p>
+      <p style="font-size:11px">.xlsx, .xls, .csv</p>
+      <input type="file" id="t9r_fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div id="t9r_fileInfo" style="display:none">
+      <div class="file-info">
+        <span class="file-name" id="t9r_fileName"></span>
+        <span class="file-meta" id="t9r_fileMeta"></span>
+        <button class="btn-remove" onclick="clearConfUpload('r')">&times;</button>
+      </div>
+    </div>
+
+    <div id="t9r_config" style="display:none; margin-top:10px">
+      <div class="config-grid">
+        <div class="config-item">
+          <label>거래처명 컬럼</label>
+          <select class="calc-select" id="t9r_nameCol"><option value="">--</option></select>
+        </div>
+        <div class="config-item">
+          <label>잔액(금액) 컬럼</label>
+          <select class="calc-select" id="t9r_amtCol"><option value="">--</option></select>
+        </div>
+      </div>
+
+      <div class="key-item-section">
+        <h5>&#x1f511; Key Items (주요항목) 자동 선택 기준</h5>
+        <div class="config-grid">
+          <div class="config-item">
+            <label>PM 초과 항목 자동 선택</label>
+            <select class="calc-select" id="t9r_keyPM"><option value="1">예 (PM 이상 전수 선택)</option><option value="0">아니오</option></select>
+          </div>
+          <div class="config-item">
+            <label>장기 미수 항목 포함 <span class="info-tip" data-tip="별도 aging 컬럼이 있으면 선택">?</span></label>
+            <select class="calc-select" id="t9r_agingCol"><option value="">없음 (미사용)</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-grid" style="margin-top:8px">
+        <div class="config-item">
+          <label>샘플링 방법</label>
+          <select class="calc-select" id="t9r_method">
+            <option value="random">Random (무작위)</option>
+            <option value="mus" selected>MUS (화폐단위) - 권장</option>
+            <option value="interval">Interval (체계적)</option>
+            <option value="stratified">Stratified (층화)</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label>샘플 수 (Key Items 제외)</label>
+          <input type="number" class="calc-input" id="t9r_sampleSize" min="1" placeholder="예: 30">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-sm mt-2" onclick="executeConfSampling('r')" style="background:#2b6cb0; border-color:#2b6cb0; width:100%; padding:8px">
+        &#x1f3af; 채권 샘플 추출
+      </button>
+    </div>
+
+    <div id="t9r_result" style="display:none; margin-top:12px">
+      <div class="sample-stats" id="t9r_stats"></div>
+      <div style="margin:8px 0">
+        <button class="btn btn-primary btn-sm no-print" onclick="downloadConfExcel('r')" style="background:#2b6cb0; border-color:#2b6cb0; font-size:11px">&#x1f4e5; 채권 샘플 Excel</button>
+      </div>
+      <div style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:4px">
+        <table class="table table-sm table-bordered sample-result-table" id="t9r_table">
+          <thead id="t9r_head"></thead>
+          <tbody id="t9r_body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAYABLE (채무) ===== -->
+  <div class="confirm-section payable">
+    <h4><span class="badge-pay">채무 Payable</span> 매입채무 샘플링</h4>
+    <p style="font-size:11px; color:var(--text-muted)">주장: 완전성(Completeness) - 과소계상 위험 → 잔액 0 거래처도 고려</p>
+
+    <div class="confirm-upload-zone" id="t9p_dropZone" onclick="document.getElementById('t9p_fileInput').click()">
+      <div style="font-size:1.5rem">&#x1f4c4;</div>
+      <p style="margin:4px 0"><strong>채무 모집단</strong> 파일 업로드</p>
+      <p style="font-size:11px">.xlsx, .xls, .csv</p>
+      <input type="file" id="t9p_fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div id="t9p_fileInfo" style="display:none">
+      <div class="file-info">
+        <span class="file-name" id="t9p_fileName"></span>
+        <span class="file-meta" id="t9p_fileMeta"></span>
+        <button class="btn-remove" onclick="clearConfUpload('p')">&times;</button>
+      </div>
+    </div>
+
+    <div id="t9p_config" style="display:none; margin-top:10px">
+      <div class="config-grid">
+        <div class="config-item">
+          <label>거래처명 컬럼</label>
+          <select class="calc-select" id="t9p_nameCol"><option value="">--</option></select>
+        </div>
+        <div class="config-item">
+          <label>잔액(금액) 컬럼</label>
+          <select class="calc-select" id="t9p_amtCol"><option value="">--</option></select>
+        </div>
+      </div>
+
+      <div class="key-item-section" style="border-color:#fc8181; background:#fff5f5">
+        <h5 style="color:#c53030">&#x1f511; Key Items (주요항목) 자동 선택 기준</h5>
+        <div class="config-grid">
+          <div class="config-item">
+            <label>PM 초과 항목 자동 선택</label>
+            <select class="calc-select" id="t9p_keyPM"><option value="1">예 (PM 이상 전수 선택)</option><option value="0">아니오</option></select>
+          </div>
+          <div class="config-item">
+            <label>잔액 0 거래처 포함 <span class="info-tip" data-tip="완전성 테스트 시 잔액 0인 거래처에서도 샘플링 필요할 수 있음">?</span></label>
+            <select class="calc-select" id="t9p_inclZero"><option value="0">아니오</option><option value="1">예 (잔액 0 포함)</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-grid" style="margin-top:8px">
+        <div class="config-item">
+          <label>샘플링 방법</label>
+          <select class="calc-select" id="t9p_method">
+            <option value="random" selected>Random (무작위) - 권장</option>
+            <option value="mus">MUS (화폐단위)</option>
+            <option value="interval">Interval (체계적)</option>
+            <option value="stratified">Stratified (층화)</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label>샘플 수 (Key Items 제외)</label>
+          <input type="number" class="calc-input" id="t9p_sampleSize" min="1" placeholder="예: 20">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-sm mt-2" onclick="executeConfSampling('p')" style="background:#c53030; border-color:#c53030; width:100%; padding:8px">
+        &#x1f3af; 채무 샘플 추출
+      </button>
+    </div>
+
+    <div id="t9p_result" style="display:none; margin-top:12px">
+      <div class="sample-stats" id="t9p_stats"></div>
+      <div style="margin:8px 0">
+        <button class="btn btn-primary btn-sm no-print" onclick="downloadConfExcel('p')" style="background:#c53030; border-color:#c53030; font-size:11px">&#x1f4e5; 채무 샘플 Excel</button>
+      </div>
+      <div style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:4px">
+        <table class="table table-sm table-bordered sample-result-table" id="t9p_table">
+          <thead id="t9p_head"></thead>
+          <tbody id="t9p_body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end dual-result -->
+
+  <!-- Combined download -->
+  <div class="section-card" id="t9_combined" style="display:none">
+    <h3>&#x1f4e5; 통합 다운로드 (Combined Download)</h3>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm no-print" onclick="downloadConfExcel('both')" style="background:var(--primary); border-color:var(--primary)">&#x1f4e5; 채권+채무 통합 Excel 다운로드</button>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- end tab-content -->
+
+<footer>
+  Audit Sampling Worksheet &copy; 2025 &mdash; Based on ISA 530 Audit Sampling methodology
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+// ========== Utility Functions ==========
+function num(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? 0 : v;
+}
+function val(id) { return document.getElementById(id).value; }
+function sel(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function setText(id, text) { document.getElementById(id).textContent = text; }
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(n);
+}
+function fmtInt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(n);
+}
+function showWarning(id, show) {
+  document.getElementById(id).classList.toggle('visible', show);
+}
+
+// ========== TAB 1: ToD Representative ==========
+function calcTab1() {
+  const balance = num('t1_balance');
+  const count = num('t1_count');
+  const keyAmt = num('t1_keyAmt');
+  const keyCnt = num('t1_keyCnt');
+  const neg = num('t1_neg');
+  const excl = num('t1_excl');
+  const pm = num('t1_pm');
+
+  const sampBal = balance - keyAmt + neg - excl;
+  const sampCnt = count - keyCnt;
+  setText('t1_sampBal', fmt(sampBal));
+  setText('t1_sampCnt', fmtInt(sampCnt));
+
+  const rmm = sel('t1_rmm');
+  const toc = sel('t1_toc');
+  const sap = sel('t1_sap');
+  const osp = sel('t1_osp');
+
+  setText('t1_rmmVal', rmm);
+  setText('t1_tocVal', toc);
+  setText('t1_sapVal', sap);
+  setText('t1_ospVal', osp);
+
+  let rFactor = Math.max(0, rmm - toc - sap - osp);
+  setText('t1_rFactor', rFactor.toFixed(1));
+
+  // Warnings
+  const totalAssurance = rFactor + toc + sap + osp;
+  const exceedThreshold = toc === 0 ? rmm : rmm + 0.5;
+  showWarning('t1_warnExceed', totalAssurance > exceedThreshold);
+  showWarning('t1_warnLess', totalAssurance < rmm);
+
+  // Special zero-sample rule: RMM=Normal(2), TOC=2, OSP > 0
+  const isZero = (rmm === 2 && toc === 2 && osp > 0);
+  showWarning('t1_warnToc', rmm === toc && sap === 0 && osp === 0 && toc > 0);
+
+  // Sample size calculation
+  let initSample = 0;
+  if (isZero) {
+    initSample = 0;
+  } else if (pm > 0) {
+    initSample = sampBal * rFactor / pm;
+  }
+
+  const rounded = Math.round(initSample);
+  const multiplier = parseFloat(val('t1_var'));
+  const adjusted = rounded === 0 ? 0 : Math.ceil(rounded * multiplier);
+  const total = Math.min(adjusted + keyCnt, count > 0 ? count : adjusted + keyCnt);
+
+  setText('t1_initSample', fmt(initSample));
+  setText('t1_initRound', fmtInt(rounded));
+  setText('t1_adjSample', fmtInt(adjusted));
+  setText('t1_keyCount', fmtInt(keyCnt));
+  setText('t1_totalSample', fmtInt(total));
+
+  // Interval calculations
+  const method = val('t1_method');
+  document.getElementById('t1_intervalBox').style.display = method === 'interval' ? '' : 'none';
+  document.getElementById('t1_musBox').style.display = method === 'mus' ? '' : 'none';
+
+  if (method === 'interval' && adjusted > 0) {
+    setText('t1_interval', fmtInt(Math.round(sampCnt / adjusted)));
+  }
+  if (method === 'mus' && adjusted > 0) {
+    setText('t1_musInterval', fmt(sampBal / adjusted));
+  }
+
+  saveState('tab1');
+}
+
+// ========== TAB 2: ToD Attribute ==========
+const ATTR_TABLE = [[0,0],[0.1,1],[0.2,3],[0.3,5],[0.4,7],[0.5,10],[1,20],[1.5,30],[2,40],[2.5,50],[3,60]];
+
+function lookupAttrSize(r) {
+  const rounded = Math.round(r * 10) / 10;
+  for (const [key, size] of ATTR_TABLE) {
+    if (Math.abs(key - rounded) < 0.001) return size;
+  }
+  // Nearest match
+  let closest = ATTR_TABLE[0];
+  for (const entry of ATTR_TABLE) {
+    if (Math.abs(entry[0] - rounded) < Math.abs(closest[0] - rounded)) closest = entry;
+  }
+  return closest[1];
+}
+
+function calcTab2() {
+  for (const a of ['a1', 'a2']) {
+    const rmm = sel(`t2_${a}_rmm`);
+    const toc = sel(`t2_${a}_toc`);
+    const sap = sel(`t2_${a}_sap`);
+    const osp = sel(`t2_${a}_osp`);
+    const rFactor = Math.max(0, rmm - toc - sap - osp);
+    const size = lookupAttrSize(rFactor);
+
+    setText(`t2_${a}_rfactor`, rFactor.toFixed(1));
+    setText(`t2_${a}_sample`, size);
+
+    const totalAssurance = rFactor + toc + sap + osp;
+    const exceedThreshold = toc === 0 ? rmm : rmm + 0.5;
+    const warn = totalAssurance > exceedThreshold || totalAssurance < rmm;
+    showWarning(`t2_warn${a === 'a1' ? '1' : '2'}`, warn);
+  }
+  saveState('tab2');
+}
+
+// ========== TAB 3: Error Extrapolation ==========
+function showExtrapSub(sub) {
+  document.getElementById('t3_numeric').style.display = sub === 'numeric' ? '' : 'none';
+  document.getElementById('t3_stratified').style.display = sub === 'stratified' ? '' : 'none';
+  document.getElementById('t3_btnNumeric').className = sub === 'numeric' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+  document.getElementById('t3_btnStrat').className = sub === 'stratified' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+}
+
+function calcTab3Numeric() {
+  const errors = num('t3n_errors');
+  const sampleVal = num('t3n_sampleVal');
+  const popVal = num('t3n_popVal');
+  const keyErr = num('t3n_keyErrors');
+  const corrK = num('t3n_corrKnown');
+  const corrP = num('t3n_corrProj');
+
+  const extrap = sampleVal === 0 ? 0 : (errors / sampleVal) * popVal;
+  const subtotal = extrap + keyErr;
+  const bestEst = subtotal - corrK - corrP;
+  const totalIdent = errors + keyErr - corrK;
+
+  setText('t3n_extrap', fmt(extrap));
+  setText('t3n_subtotal', fmt(subtotal));
+  setText('t3n_bestEst', fmt(bestEst));
+  setText('t3n_totalIdent', fmt(totalIdent));
+  saveState('tab3');
+}
+
+// Stratified
+let strataCount = 3;
+
+function buildStrataRows() {
+  const tbody = document.getElementById('t3s_rows');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= strataCount; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:center">${i}</td>
+      <td><input type="number" class="calc-input strata-input" id="t3s_err_${i}" step="1" value="0"></td>
+      <td><input type="number" class="calc-input strata-input" id="t3s_samp_${i}" step="1" value="0"></td>
+      <td><input type="number" class="calc-input strata-input" id="t3s_intv_${i}" step="1" value="0"></td>
+      <td class="calc-output" id="t3s_ext_${i}">0</td>`;
+    tbody.appendChild(tr);
+  }
+  document.querySelectorAll('.strata-input').forEach(el => el.addEventListener('input', calcTab3Stratified));
+}
+
+function addStrataRow() { if (strataCount < 10) { strataCount++; buildStrataRows(); } }
+function removeStrataRow() { if (strataCount > 1) { strataCount--; buildStrataRows(); } }
+
+function calcTab3Stratified() {
+  let totalErr = 0, totalExtrap = 0;
+  for (let i = 1; i <= strataCount; i++) {
+    const err = num(`t3s_err_${i}`);
+    const samp = num(`t3s_samp_${i}`);
+    const intv = num(`t3s_intv_${i}`);
+    const ext = (err === 0 || samp === 0) ? 0 : (err / samp) * intv;
+    setText(`t3s_ext_${i}`, fmt(ext));
+    totalErr += err;
+    totalExtrap += ext;
+  }
+  const keyErr = num('t3s_keyErr');
+  const corrK = num('t3s_corrKnown');
+  const corrP = num('t3s_corrProj');
+  const subtotal = totalExtrap + keyErr;
+  const bestEst = subtotal - corrK - corrP;
+  const totalIdent = totalErr + keyErr - corrK;
+
+  setText('t3s_totalErr', fmt(totalErr));
+  setText('t3s_totalExtrap', fmt(totalExtrap));
+  setText('t3s_subtotal', fmt(subtotal));
+  setText('t3s_bestEst', fmt(bestEst));
+  setText('t3s_totalIdent', fmt(totalIdent));
+  saveState('tab3');
+}
+
+// ========== TAB 4: IPE Testing ==========
+const IPE_MAT = {
+  'Normal':      {'<5x':10,'<10x':20,'<20x':30,'>20x':40},
+  'Significant': {'<5x':15,'<10x':30,'<20x':45,'>20x':60}
+};
+const IPE_VOL = {
+  'Normal':      {'<50':5,'<300':14,'<500':25,'>500':40},
+  'Significant': {'<50':8,'<300':20,'<500':35,'>500':60}
+};
+
+function calcTab4() {
+  const rmm = val('t4_rmm');
+  const mat = val('t4_mat');
+  const vol = val('t4_vol');
+  const assert = val('t4_assert');
+  const toc = val('t4_toc');
+  const complex = val('t4_complex');
+  const imp = val('t4_import');
+
+  // Step 1
+  setText('t4_res1', rmm || '-');
+
+  // Step 2
+  let baseA = null;
+  if (rmm && mat && IPE_MAT[rmm]) {
+    baseA = IPE_MAT[rmm][mat];
+  }
+  setText('t4_res2', baseA !== null ? `Base A: ${baseA}` : 'Base A: -');
+
+  // Step 3
+  let baseB = null;
+  if (rmm && vol && IPE_VOL[rmm]) {
+    baseB = IPE_VOL[rmm][vol];
+  }
+  setText('t4_res3', baseB !== null ? `Base B: ${baseB}` : 'Base B: -');
+
+  // Step 4
+  let stepC = null;
+  if (baseA !== null && baseB !== null && assert) {
+    stepC = assert === 'Existence' ? Math.min(baseA, baseB) : Math.max(baseA, baseB);
+  }
+  setText('t4_res4', stepC !== null ? `C: ${stepC}` : 'C: -');
+
+  // Step 5
+  let stepD = null;
+  if (stepC !== null && toc) {
+    stepD = toc === 'Yes' ? Math.ceil(stepC * 0.2) : stepC;
+  }
+  setText('t4_res5', stepD !== null ? `D: ${stepD}` : 'D: -');
+
+  // Step 6
+  let stepE = null;
+  if (stepD !== null && complex) {
+    if (complex === 'simple') stepE = Math.ceil(stepD * 0.2);
+    else if (complex === 'noncomplex') stepE = Math.ceil(stepD * 0.6);
+    else stepE = stepD;
+  }
+  setText('t4_res6', stepE !== null ? `E: ${stepE}` : 'E: -');
+
+  // Step 7
+  let finalSize = null;
+  if (stepE !== null && imp) {
+    if (imp === 'not_important') finalSize = Math.ceil(stepE * 0.2);
+    else if (imp === 'important') finalSize = Math.ceil(stepE * 0.6);
+    else finalSize = stepE;
+  }
+  setText('t4_res7', finalSize !== null ? `Final: ${finalSize}` : 'Final: -');
+  setText('t4_finalResult', finalSize !== null ? finalSize : '-');
+
+  saveState('tab4');
+}
+
+// ========== TAB 5: ToC ==========
+function showTocSub(sub) {
+  document.getElementById('t5_assess').style.display = sub === 'assess' ? '' : 'none';
+  document.getElementById('t5_tables').style.display = sub === 'tables' ? '' : 'none';
+  document.getElementById('t5_btnAssess').className = sub === 'assess' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+  document.getElementById('t5_btnTables').className = sub === 'tables' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+}
+
+// ========== TAB 6: R-factor Converter ==========
+function calcRfactorConv() {
+  const conf = num('t6_conf');
+  if (conf > 0 && conf < 100) {
+    const r = -Math.log(1 - conf / 100);
+    setText('t6_toR', `R-factor: ${r.toFixed(4)}`);
+  } else {
+    setText('t6_toR', 'R-factor: -');
+  }
+}
+function calcConfConv() {
+  const r = num('t6_rfac');
+  if (r > 0) {
+    const conf = (1 - Math.exp(-r)) * 100;
+    setText('t6_toConf', `Confidence: ${conf.toFixed(2)}%`);
+  } else {
+    setText('t6_toConf', 'Confidence: -');
+  }
+}
+
+// ========== localStorage ==========
+function saveState(tabId) {
+  try {
+    const tab = document.getElementById(tabId);
+    if (!tab) return;
+    const data = {};
+    tab.querySelectorAll('input, select, textarea').forEach(el => {
+      if (el.id) data[el.id] = el.value;
+    });
+    localStorage.setItem('auditSamp_' + tabId, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadState(tabId) {
+  try {
+    const saved = localStorage.getItem('auditSamp_' + tabId);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    Object.entries(data).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    });
+  } catch(e) {}
+}
+
+function resetCurrentTab() {
+  const active = document.querySelector('.tab-pane.active');
+  if (!active) return;
+  if (!confirm('현재 탭의 모든 입력을 초기화하시겠습니까?')) return;
+  active.querySelectorAll('input[type="number"]').forEach(el => el.value = el.defaultValue || '');
+  active.querySelectorAll('input[type="text"], input[type="date"]').forEach(el => el.value = '');
+  active.querySelectorAll('textarea').forEach(el => el.value = '');
+  active.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  localStorage.removeItem('auditSamp_' + active.id);
+  runCalc(active.id);
+}
+
+function runCalc(tabId) {
+  if (tabId === 'tab1') calcTab1();
+  else if (tabId === 'tab2') calcTab2();
+  else if (tabId === 'tab3') { calcTab3Numeric(); calcTab3Stratified(); }
+  else if (tabId === 'tab4') calcTab4();
+}
+
+// ========== Event Binding ==========
+function init() {
+  // Load saved state
+  ['tab1','tab2','tab3','tab4','tab5'].forEach(loadState);
+
+  // Build strata rows
+  buildStrataRows();
+
+  // Tab 1 events
+  document.querySelectorAll('#tab1 input, #tab1 select').forEach(el =>
+    el.addEventListener('input', calcTab1));
+
+  // Tab 2 events
+  document.querySelectorAll('#tab2 input, #tab2 select').forEach(el =>
+    el.addEventListener('input', calcTab2));
+
+  // Tab 3 numeric events
+  document.querySelectorAll('#t3_numeric input').forEach(el =>
+    el.addEventListener('input', calcTab3Numeric));
+  // Tab 3 stratified summary inputs
+  ['t3s_keyErr','t3s_corrKnown','t3s_corrProj'].forEach(id =>
+    document.getElementById(id).addEventListener('input', calcTab3Stratified));
+
+  // Tab 4 events
+  document.querySelectorAll('#tab4 select').forEach(el =>
+    el.addEventListener('change', calcTab4));
+
+  // Tab 5 - save on change
+  document.querySelectorAll('#tab5 input, #tab5 select').forEach(el =>
+    el.addEventListener('input', () => saveState('tab5')));
+
+  // Tab 6 converter
+  document.getElementById('t6_conf').addEventListener('input', calcRfactorConv);
+  document.getElementById('t6_rfac').addEventListener('input', calcConfConv);
+
+  // Initial calculations
+  calcTab1();
+  calcTab2();
+  calcTab3Numeric();
+  calcTab3Stratified();
+  calcTab4();
+
+  // Tab 8: file upload events
+  initTab8();
+  // Tab 9: confirmation sampling
+  initTab9();
+}
+
+// ========== TAB 8: Sample Extraction ==========
+let t8_workbook = null;
+let t8_data = [];      // array of objects (parsed rows)
+let t8_headers = [];   // column headers
+let t8_sampledIndices = []; // indices of sampled rows
+
+function initTab8() {
+  const dropZone = document.getElementById('t8_dropZone');
+  const fileInput = document.getElementById('t8_fileInput');
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  // Sheet select
+  document.getElementById('t8_sheet').addEventListener('change', () => loadSheet());
+
+  // Stratified method change
+  document.getElementById('t8_stratMethod').addEventListener('change', () => {
+    document.getElementById('t8_customBounds').style.display =
+      document.getElementById('t8_stratMethod').value === 'custom' ? '' : 'none';
+  });
+
+  // Sync Tab1 size whenever tab8 becomes visible
+  document.querySelector('[href="#tab8"]').addEventListener('shown.bs.tab', syncTab1Size);
+}
+
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) {
+    alert('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일을 업로드해 주세요.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      if (ext === 'csv') {
+        t8_workbook = XLSX.read(e.target.result, { type: 'string', codepage: 949 });
+      } else {
+        t8_workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      }
+
+      // Show file info
+      document.getElementById('t8_dropZone').style.display = 'none';
+      document.getElementById('t8_fileInfo').style.display = '';
+      document.getElementById('t8_fileName').textContent = file.name;
+
+      // Sheet selector
+      const sheetNames = t8_workbook.SheetNames;
+      const sheetSel = document.getElementById('t8_sheet');
+      sheetSel.innerHTML = sheetNames.map((s,i) => `<option value="${i}">${s}</option>`).join('');
+      document.getElementById('t8_sheetSelect').style.display = sheetNames.length > 1 ? '' : 'none';
+
+      loadSheet();
+    } catch(err) {
+      alert('파일 읽기 오류: ' + err.message);
+    }
+  };
+
+  if (ext === 'csv') reader.readAsText(file, 'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function loadSheet() {
+  const sheetIdx = parseInt(document.getElementById('t8_sheet').value) || 0;
+  const sheet = t8_workbook.Sheets[t8_workbook.SheetNames[sheetIdx]];
+  const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+  if (json.length === 0) {
+    alert('시트에 데이터가 없습니다.');
+    return;
+  }
+
+  t8_data = json;
+  t8_headers = Object.keys(json[0]);
+  t8_sampledIndices = [];
+
+  // File meta
+  document.getElementById('t8_fileMeta').textContent = `${t8_data.length}행 × ${t8_headers.length}열`;
+
+  // Preview table (top 10 rows)
+  let html = '<table class="table table-sm table-bordered mb-0"><thead><tr>';
+  html += '<th>#</th>';
+  t8_headers.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  const previewRows = Math.min(10, t8_data.length);
+  for (let i = 0; i < previewRows; i++) {
+    html += `<tr><td>${i+1}</td>`;
+    t8_headers.forEach(h => html += `<td>${t8_data[i][h]}</td>`);
+    html += '</tr>';
+  }
+  if (t8_data.length > 10) html += `<tr><td colspan="${t8_headers.length+1}" style="text-align:center;color:var(--text-muted)">... 외 ${t8_data.length - 10}행</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('t8_previewTable').innerHTML = html;
+  document.getElementById('t8_preview').style.display = '';
+
+  // Populate amount column dropdown
+  const amtSel = document.getElementById('t8_amtCol');
+  amtSel.innerHTML = '<option value="">-- 선택 --</option>';
+  t8_headers.forEach(h => {
+    // Auto-detect numeric columns
+    const first5 = t8_data.slice(0, 5).map(r => r[h]);
+    const isNumeric = first5.every(v => v === '' || !isNaN(parseFloat(v)));
+    amtSel.innerHTML += `<option value="${h}"${isNumeric ? '' : ''}>${h}${isNumeric ? ' (숫자)' : ''}</option>`;
+  });
+
+  // Show config section
+  document.getElementById('t8_configSection').style.display = '';
+  document.getElementById('t8_resultSection').style.display = 'none';
+
+  syncTab1Size();
+}
+
+function clearUpload() {
+  t8_workbook = null;
+  t8_data = [];
+  t8_headers = [];
+  t8_sampledIndices = [];
+  document.getElementById('t8_dropZone').style.display = '';
+  document.getElementById('t8_fileInfo').style.display = 'none';
+  document.getElementById('t8_sheetSelect').style.display = 'none';
+  document.getElementById('t8_preview').style.display = 'none';
+  document.getElementById('t8_configSection').style.display = 'none';
+  document.getElementById('t8_resultSection').style.display = 'none';
+  document.getElementById('t8_fileInput').value = '';
+}
+
+function onMethodChange() {
+  const m = document.getElementById('t8_method').value;
+  document.getElementById('t8_musConfig').style.display = m === 'mus' ? '' : 'none';
+  document.getElementById('t8_stratConfig').style.display = m === 'stratified' ? '' : 'none';
+}
+
+function syncTab1Size() {
+  const totalEl = document.getElementById('t1_totalSample');
+  if (totalEl) {
+    const v = totalEl.textContent.replace(/,/g, '');
+    setText('t8_tab1Size', totalEl.textContent);
+  }
+}
+
+function applyTab1Size() {
+  const totalEl = document.getElementById('t1_totalSample');
+  if (totalEl) {
+    const v = parseInt(totalEl.textContent.replace(/,/g, ''));
+    if (v > 0) document.getElementById('t8_sampleSize').value = v;
+  }
+}
+
+// ========== Sampling Algorithms ==========
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Fisher-Yates shuffle to get n random indices
+function randomSample(n, total) {
+  if (n >= total) return Array.from({length: total}, (_, i) => i);
+  const indices = new Set();
+  while (indices.size < n) {
+    indices.add(getRandomInt(0, total - 1));
+  }
+  return [...indices].sort((a,b) => a-b);
+}
+
+// Systematic/Interval sampling
+function intervalSample(n, total, startIdx) {
+  if (n >= total) return Array.from({length: total}, (_, i) => i);
+  const interval = total / n;
+  const start = (startIdx && startIdx >= 1 && startIdx <= Math.floor(interval))
+    ? startIdx - 1
+    : getRandomInt(0, Math.floor(interval) - 1);
+  const indices = [];
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(start + i * interval);
+    if (idx < total) indices.push(idx);
+  }
+  return indices;
+}
+
+// Haphazard sampling (pseudo-random with deterministic spread)
+function haphazardSample(n, total) {
+  if (n >= total) return Array.from({length: total}, (_, i) => i);
+  // Use multiple random seeds with spread to simulate haphazard
+  const indices = new Set();
+  const step = Math.floor(total / n);
+  for (let i = 0; i < n; i++) {
+    let idx = Math.floor(i * step + Math.random() * step * 0.8);
+    idx = Math.min(idx, total - 1);
+    while (indices.has(idx) && idx < total) idx++;
+    if (idx < total) indices.add(idx);
+  }
+  // Fill remaining if needed
+  while (indices.size < n) {
+    indices.add(getRandomInt(0, total - 1));
+  }
+  return [...indices].sort((a,b) => a-b);
+}
+
+// Stratified sampling
+function stratifiedSample(n, data, amtCol, stratMethod, stratNum, customBounds) {
+  if (!amtCol) { alert('층화 추출을 위해 금액 컬럼을 선택해 주세요.'); return null; }
+
+  const amounts = data.map((r, i) => ({ idx: i, amt: parseFloat(r[amtCol]) || 0 }));
+  const sortedAmts = amounts.map(a => a.amt).sort((a, b) => a - b);
+  const total = amounts.length;
+
+  // Determine strata boundaries
+  let boundaries = [];
+  if (stratMethod === 'equal_range') {
+    const min = sortedAmts[0];
+    const max = sortedAmts[sortedAmts.length - 1];
+    const range = max - min;
+    for (let i = 1; i < stratNum; i++) {
+      boundaries.push(min + (range * i / stratNum));
+    }
+  } else if (stratMethod === 'quantile') {
+    for (let i = 1; i < stratNum; i++) {
+      const q = Math.floor(total * i / stratNum);
+      boundaries.push(sortedAmts[q]);
+    }
+  } else { // custom
+    boundaries = customBounds.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+    if (boundaries.length === 0) { alert('경계값을 입력해 주세요.'); return null; }
+    boundaries.sort((a,b) => a-b);
+  }
+
+  // Assign to strata
+  const numStrata = boundaries.length + 1;
+  const strata = Array.from({length: numStrata}, () => []);
+  amounts.forEach(item => {
+    let s = 0;
+    for (let b = 0; b < boundaries.length; b++) {
+      if (item.amt > boundaries[b]) s = b + 1;
+    }
+    strata[s].push(item.idx);
+  });
+
+  // Proportional allocation
+  const indices = [];
+  strata.forEach(stratum => {
+    const stratSampleN = Math.max(1, Math.round(n * stratum.length / total));
+    const selected = randomSample(Math.min(stratSampleN, stratum.length), stratum.length);
+    selected.forEach(si => indices.push(stratum[si]));
+  });
+
+  // Adjust if over/under
+  while (indices.length > n) indices.pop();
+  if (indices.length < n) {
+    const remaining = data.map((_, i) => i).filter(i => !indices.includes(i));
+    while (indices.length < n && remaining.length > 0) {
+      const ri = getRandomInt(0, remaining.length - 1);
+      indices.push(remaining.splice(ri, 1)[0]);
+    }
+  }
+
+  return indices.sort((a,b) => a-b);
+}
+
+// MUS - Monetary Unit Sampling
+function musSample(data, amtCol, interval, startAmt) {
+  if (!amtCol) { alert('MUS를 위해 금액 컬럼을 선택해 주세요.'); return null; }
+
+  const indices = new Set();
+  let cumulative = 0;
+
+  // Use absolute values for cumulation
+  const amounts = data.map(r => Math.abs(parseFloat(r[amtCol]) || 0));
+  const totalAmt = amounts.reduce((s, a) => s + a, 0);
+
+  if (!interval || interval <= 0) interval = totalAmt / parseInt(document.getElementById('t8_sampleSize').value);
+  if (!startAmt || startAmt <= 0 || startAmt > interval) startAmt = Math.random() * interval;
+
+  let nextHit = startAmt;
+
+  for (let i = 0; i < data.length; i++) {
+    cumulative += amounts[i];
+    while (cumulative >= nextHit) {
+      indices.add(i);
+      nextHit += interval;
+    }
+  }
+
+  return [...indices].sort((a,b) => a-b);
+}
+
+// ========== Execute Sampling ==========
+function executeSampling() {
+  if (t8_data.length === 0) { alert('먼저 모집단 파일을 업로드해 주세요.'); return; }
+
+  const method = val('t8_method');
+  const sampleSize = parseInt(document.getElementById('t8_sampleSize').value);
+  const amtCol = val('t8_amtCol');
+
+  if (method !== 'mus' && (!sampleSize || sampleSize < 1)) {
+    alert('샘플 수를 입력해 주세요.');
+    return;
+  }
+
+  const n = Math.min(sampleSize, t8_data.length);
+  let selectedIndices = [];
+
+  switch (method) {
+    case 'random':
+      selectedIndices = randomSample(n, t8_data.length);
+      break;
+
+    case 'interval': {
+      const start = parseInt(document.getElementById('t8_startRow').value) || 0;
+      selectedIndices = intervalSample(n, t8_data.length, start);
+      break;
+    }
+
+    case 'haphazard':
+      selectedIndices = haphazardSample(n, t8_data.length);
+      break;
+
+    case 'stratified': {
+      const stratMethod = val('t8_stratMethod');
+      const stratNum = parseInt(document.getElementById('t8_stratNum').value) || 3;
+      const customBounds = val('t8_stratBounds');
+      selectedIndices = stratifiedSample(n, t8_data, amtCol, stratMethod, stratNum, customBounds);
+      if (selectedIndices === null) return;
+      break;
+    }
+
+    case 'mus': {
+      const interval = parseFloat(document.getElementById('t8_musInterval').value) || 0;
+      const start = parseFloat(document.getElementById('t8_musStart').value) || 0;
+      selectedIndices = musSample(t8_data, amtCol, interval, start);
+      if (selectedIndices === null) return;
+      break;
+    }
+  }
+
+  t8_sampledIndices = selectedIndices;
+  displayResults(method, amtCol);
+}
+
+function displayResults(method, amtCol) {
+  const n = t8_sampledIndices.length;
+  const total = t8_data.length;
+
+  // Stats
+  const methodNames = {
+    random: 'Random (무작위)',
+    interval: 'Interval (체계적)',
+    haphazard: 'Haphazard (임의)',
+    stratified: 'Stratified (층화)',
+    mus: 'MUS (화폐단위)'
+  };
+
+  let statsHtml = `
+    <div class="stat-box"><div class="stat-val">${fmtInt(n)}</div><div class="stat-label">추출 건수</div></div>
+    <div class="stat-box"><div class="stat-val">${fmtInt(total)}</div><div class="stat-label">모집단 건수</div></div>
+    <div class="stat-box"><div class="stat-val">${(n/total*100).toFixed(1)}%</div><div class="stat-label">추출 비율</div></div>
+    <div class="stat-box"><div class="stat-val">${methodNames[method] || method}</div><div class="stat-label">추출 방법</div></div>`;
+
+  if (amtCol && t8_data.length > 0) {
+    const totalAmt = t8_data.reduce((s, r) => s + (parseFloat(r[amtCol]) || 0), 0);
+    const sampledAmt = t8_sampledIndices.reduce((s, i) => s + (parseFloat(t8_data[i][amtCol]) || 0), 0);
+    statsHtml += `
+      <div class="stat-box"><div class="stat-val">${fmt(totalAmt)}</div><div class="stat-label">모집단 금액</div></div>
+      <div class="stat-box"><div class="stat-val">${fmt(sampledAmt)}</div><div class="stat-label">추출 금액</div></div>
+      <div class="stat-box"><div class="stat-val">${(sampledAmt/totalAmt*100).toFixed(1)}%</div><div class="stat-label">금액 커버리지</div></div>`;
+  }
+  document.getElementById('t8_stats').innerHTML = statsHtml;
+
+  // Result table (sampled items only)
+  const thead = document.getElementById('t8_resultHead');
+  const tbody = document.getElementById('t8_resultBody');
+
+  let headHtml = '<tr><th>원본행#</th>';
+  t8_headers.forEach(h => headHtml += `<th>${h}</th>`);
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
+
+  let bodyHtml = '';
+  t8_sampledIndices.forEach(idx => {
+    bodyHtml += `<tr class="sampled"><td style="text-align:center;font-weight:600">${idx+1}</td>`;
+    t8_headers.forEach(h => {
+      const v = t8_data[idx][h];
+      const isNum = !isNaN(parseFloat(v)) && v !== '';
+      bodyHtml += `<td style="${isNum ? 'text-align:right' : ''}">${isNum ? fmt(parseFloat(v)) : v}</td>`;
+    });
+    bodyHtml += '</tr>';
+  });
+  tbody.innerHTML = bodyHtml;
+
+  document.getElementById('t8_resultSection').style.display = '';
+
+  // Summary text
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('t8_resultSummary').innerHTML =
+    `<div style="font-size:11px;color:var(--text-muted)">추출 일시: ${dateStr} | 방법: ${methodNames[method]} | 모집단: ${fmtInt(total)}건 → 추출: ${fmtInt(n)}건</div>`;
+}
+
+// ========== Excel Download ==========
+function downloadSampleExcel(includeAll) {
+  if (t8_sampledIndices.length === 0) { alert('먼저 샘플을 추출해 주세요.'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  if (includeAll) {
+    // Full population with "Sampled" marker column
+    const exportData = t8_data.map((row, idx) => {
+      const newRow = { 'Sampled': t8_sampledIndices.includes(idx) ? 'Y' : '', 'Row#': idx + 1 };
+      t8_headers.forEach(h => newRow[h] = row[h]);
+      return newRow;
+    });
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = [{ wch: 8 }, { wch: 6 }];
+    t8_headers.forEach(h => colWidths.push({ wch: Math.max(h.length + 2, 12) }));
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Population + Sample');
+  } else {
+    // Sampled items only
+    const exportData = t8_sampledIndices.map(idx => {
+      const newRow = { 'Row#': idx + 1 };
+      t8_headers.forEach(h => newRow[h] = t8_data[idx][h]);
+      return newRow;
+    });
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    const colWidths = [{ wch: 6 }];
+    t8_headers.forEach(h => colWidths.push({ wch: Math.max(h.length + 2, 12) }));
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Sampled Items');
+  }
+
+  // Download
+  const filename = includeAll
+    ? `audit_sample_full_${new Date().toISOString().slice(0,10)}.xlsx`
+    : `audit_sample_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+// ========== TAB 9: Confirmation Sampling ==========
+const t9State = {
+  r: { workbook: null, data: [], headers: [], keyIndices: [], sampleIndices: [] },
+  p: { workbook: null, data: [], headers: [], keyIndices: [], sampleIndices: [] }
+};
+
+function initTab9() {
+  ['r', 'p'].forEach(side => {
+    const dropZone = document.getElementById(`t9${side}_dropZone`);
+    const fileInput = document.getElementById(`t9${side}_fileInput`);
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#cbd5e0'; });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.style.borderColor = '#cbd5e0';
+      if (e.dataTransfer.files.length) handleConfFile(side, e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => {
+      if (e.target.files.length) handleConfFile(side, e.target.files[0]);
+    });
+  });
+}
+
+function handleConfFile(side, file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) { alert('지원하지 않는 파일 형식입니다.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let wb;
+      if (ext === 'csv') {
+        wb = XLSX.read(e.target.result, { type: 'string', codepage: 949 });
+      } else {
+        wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      }
+
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      if (json.length === 0) { alert('데이터가 없습니다.'); return; }
+
+      const st = t9State[side];
+      st.workbook = wb;
+      st.data = json;
+      st.headers = Object.keys(json[0]);
+      st.keyIndices = [];
+      st.sampleIndices = [];
+
+      // UI updates
+      document.getElementById(`t9${side}_dropZone`).style.display = 'none';
+      document.getElementById(`t9${side}_fileInfo`).style.display = '';
+      document.getElementById(`t9${side}_fileName`).textContent = file.name;
+      document.getElementById(`t9${side}_fileMeta`).textContent = `${st.data.length}행 × ${st.headers.length}열`;
+
+      // Populate column selectors
+      const cols = st.headers;
+      ['nameCol', 'amtCol'].forEach(colType => {
+        const sel = document.getElementById(`t9${side}_${colType}`);
+        sel.innerHTML = '<option value="">-- 선택 --</option>';
+        cols.forEach(h => {
+          const first5 = st.data.slice(0, 5).map(r => r[h]);
+          const isNum = first5.every(v => v === '' || !isNaN(parseFloat(v)));
+          sel.innerHTML += `<option value="${h}">${h}${isNum ? ' (숫자)' : ''}</option>`;
+        });
+      });
+
+      // Aging column for receivables
+      if (side === 'r') {
+        const agingSel = document.getElementById('t9r_agingCol');
+        agingSel.innerHTML = '<option value="">없음 (미사용)</option>';
+        cols.forEach(h => agingSel.innerHTML += `<option value="${h}">${h}</option>`);
+      }
+
+      document.getElementById(`t9${side}_config`).style.display = '';
+      document.getElementById(`t9${side}_result`).style.display = 'none';
+    } catch(err) { alert('파일 읽기 오류: ' + err.message); }
+  };
+
+  if (ext === 'csv') reader.readAsText(file, 'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function clearConfUpload(side) {
+  const st = t9State[side];
+  st.workbook = null; st.data = []; st.headers = [];
+  st.keyIndices = []; st.sampleIndices = [];
+  document.getElementById(`t9${side}_dropZone`).style.display = '';
+  document.getElementById(`t9${side}_fileInfo`).style.display = 'none';
+  document.getElementById(`t9${side}_config`).style.display = 'none';
+  document.getElementById(`t9${side}_result`).style.display = 'none';
+  document.getElementById(`t9${side}_fileInput`).value = '';
+  document.getElementById('t9_combined').style.display = 'none';
+}
+
+function executeConfSampling(side) {
+  const st = t9State[side];
+  if (st.data.length === 0) { alert('먼저 모집단 파일을 업로드해 주세요.'); return; }
+
+  const amtCol = val(`t9${side}_amtCol`);
+  const nameCol = val(`t9${side}_nameCol`);
+  const sampleSize = parseInt(document.getElementById(`t9${side}_sampleSize`).value);
+  const method = val(`t9${side}_method`);
+  const pm = num('t9_pm');
+  const keyPM = val(`t9${side}_keyPM`) === '1';
+
+  if (!amtCol) { alert('잔액(금액) 컬럼을 선택해 주세요.'); return; }
+  if (!sampleSize || sampleSize < 1) { alert('샘플 수를 입력해 주세요.'); return; }
+
+  // Step 1: Identify Key Items (PM 초과)
+  let keyIndices = [];
+  if (keyPM && pm > 0) {
+    st.data.forEach((row, idx) => {
+      const amt = Math.abs(parseFloat(row[amtCol]) || 0);
+      if (amt >= pm) keyIndices.push(idx);
+    });
+  }
+
+  // For payables: include zero-balance if option selected
+  let populationIndices = st.data.map((_, i) => i);
+  if (side === 'p' && val('t9p_inclZero') === '0') {
+    populationIndices = populationIndices.filter(i => {
+      const amt = parseFloat(st.data[i][amtCol]) || 0;
+      return amt !== 0;
+    });
+  }
+
+  // Remaining population (exclude key items)
+  const remainingIndices = populationIndices.filter(i => !keyIndices.includes(i));
+
+  // Step 2: Sample from remaining
+  const n = Math.min(sampleSize, remainingIndices.length);
+  let sampledFromRemaining = [];
+
+  switch (method) {
+    case 'random':
+      sampledFromRemaining = randomSample(n, remainingIndices.length).map(i => remainingIndices[i]);
+      break;
+    case 'interval':
+      sampledFromRemaining = intervalSample(n, remainingIndices.length, 0).map(i => remainingIndices[i]);
+      break;
+    case 'mus': {
+      // MUS on remaining items
+      const remainingData = remainingIndices.map(i => st.data[i]);
+      const amounts = remainingData.map(r => Math.abs(parseFloat(r[amtCol]) || 0));
+      const totalAmt = amounts.reduce((s, a) => s + a, 0);
+      const interval = totalAmt / n;
+      const start = Math.random() * interval;
+      let cumulative = 0;
+      let nextHit = start;
+      const musSelected = new Set();
+      for (let i = 0; i < remainingData.length; i++) {
+        cumulative += amounts[i];
+        while (cumulative >= nextHit) {
+          musSelected.add(i);
+          nextHit += interval;
+        }
+      }
+      sampledFromRemaining = [...musSelected].map(i => remainingIndices[i]);
+      break;
+    }
+    case 'stratified': {
+      const remainingData = remainingIndices.map(i => st.data[i]);
+      const amounts = remainingData.map(r => Math.abs(parseFloat(r[amtCol]) || 0)).sort((a,b) => a-b);
+      const numStrata = 3;
+      const boundaries = [];
+      for (let b = 1; b < numStrata; b++) {
+        const q = Math.floor(amounts.length * b / numStrata);
+        boundaries.push(amounts[q]);
+      }
+      const strata = Array.from({length: numStrata}, () => []);
+      remainingIndices.forEach((origIdx, i) => {
+        const amt = Math.abs(parseFloat(st.data[origIdx][amtCol]) || 0);
+        let s = 0;
+        for (let b = 0; b < boundaries.length; b++) { if (amt > boundaries[b]) s = b + 1; }
+        strata[s].push(origIdx);
+      });
+      strata.forEach(stratum => {
+        const stratN = Math.max(1, Math.round(n * stratum.length / remainingIndices.length));
+        const sel = randomSample(Math.min(stratN, stratum.length), stratum.length);
+        sel.forEach(si => sampledFromRemaining.push(stratum[si]));
+      });
+      while (sampledFromRemaining.length > n) sampledFromRemaining.pop();
+      break;
+    }
+  }
+
+  st.keyIndices = keyIndices;
+  st.sampleIndices = sampledFromRemaining;
+  st.requestedSize = sampleSize;
+  st.remainingCount = remainingIndices.length;
+
+  // Display results
+  displayConfResults(side);
+
+  // Show combined download if both have results
+  if (t9State.r.sampleIndices.length > 0 || t9State.p.sampleIndices.length > 0) {
+    document.getElementById('t9_combined').style.display = '';
+  }
+}
+
+function displayConfResults(side) {
+  const st = t9State[side];
+  const amtCol = val(`t9${side}_amtCol`);
+  const allSelected = [...st.keyIndices, ...st.sampleIndices];
+  const totalPop = st.data.length;
+  const totalAmt = st.data.reduce((s, r) => s + Math.abs(parseFloat(r[amtCol]) || 0), 0);
+  const selectedAmt = allSelected.reduce((s, i) => s + Math.abs(parseFloat(st.data[i][amtCol]) || 0), 0);
+  const color = side === 'r' ? '#2b6cb0' : '#c53030';
+  const label = side === 'r' ? '채권' : '채무';
+
+  const requested = st.requestedSize || 0;
+  const actual = st.sampleIndices.length;
+  const diff = requested - actual;
+  const remaining = st.remainingCount || 0;
+
+  let sampleLabel = '샘플 추출';
+  let sampleExtra = '';
+  if (diff > 0) {
+    sampleLabel = `샘플 추출 <span style="font-size:0.7em; color:#e53e3e">(요청: ${requested})</span>`;
+    sampleExtra = `<div style="font-size:0.72em; color:#e53e3e; margin-top:2px">▼ ${diff}건 차이</div>`;
+  }
+
+  let statsHtml = `
+    <div class="stat-box"><div class="stat-val" style="color:${color}">${st.keyIndices.length}</div><div class="stat-label">Key Items</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:${color}">${actual}</div><div class="stat-label">${sampleLabel}</div>${sampleExtra}</div>
+    <div class="stat-box"><div class="stat-val" style="color:${color}">${allSelected.length}</div><div class="stat-label">조회 대상 합계</div></div>
+    <div class="stat-box"><div class="stat-val">${fmtInt(totalPop)}</div><div class="stat-label">모집단</div></div>
+    <div class="stat-box"><div class="stat-val">${totalAmt > 0 ? (selectedAmt/totalAmt*100).toFixed(1)+'%' : '-'}</div><div class="stat-label">금액 커버리지</div></div>`;
+
+  // Add info banner when actual differs from requested
+  if (diff > 0) {
+    const method = val(`t9${side}_method`);
+    const methodNames = { random: 'Random', interval: 'Interval', mus: 'MUS', stratified: 'Stratified' };
+    let reason = '';
+    if (method === 'mus') {
+      reason = `MUS 알고리즘은 금액 기준 간격(Sampling Interval)으로 추출하므로, 모집단의 금액 분포에 따라 실제 추출 건수가 요청 수와 다를 수 있습니다.`;
+    } else {
+      reason = `Key Items ${st.keyIndices.length}건 제외 후 남은 모집단이 ${remaining}건으로, 요청한 ${requested}건보다 적어 ${actual}건만 추출되었습니다.`;
+    }
+    statsHtml += `</div><div style="background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; padding:10px 14px; margin-top:10px; font-size:0.85em; color:#c53030; display:flex; align-items:flex-start; gap:8px">
+      <span style="font-size:1.1em">⚠️</span>
+      <div><strong>요청 ${requested}건 → 실제 ${actual}건 추출</strong><br>${reason}</div>`;
+  }
+
+  document.getElementById(`t9${side}_stats`).innerHTML = statsHtml;
+
+  // Table
+  const thead = document.getElementById(`t9${side}_head`);
+  const tbody = document.getElementById(`t9${side}_body`);
+  let headHtml = '<tr><th>구분</th><th>행#</th>';
+  st.headers.forEach(h => headHtml += `<th>${h}</th>`);
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
+
+  let bodyHtml = '';
+  // Key items first
+  st.keyIndices.sort((a,b) => {
+    const aa = Math.abs(parseFloat(st.data[a][amtCol]) || 0);
+    const bb = Math.abs(parseFloat(st.data[b][amtCol]) || 0);
+    return bb - aa;
+  }).forEach(idx => {
+    bodyHtml += `<tr style="background:#fefcbf"><td style="font-weight:700;color:${color}">Key</td><td style="text-align:center">${idx+1}</td>`;
+    st.headers.forEach(h => {
+      const v = st.data[idx][h];
+      const isNum = !isNaN(parseFloat(v)) && v !== '';
+      bodyHtml += `<td style="${isNum ? 'text-align:right' : ''}">${isNum ? fmt(parseFloat(v)) : v}</td>`;
+    });
+    bodyHtml += '</tr>';
+  });
+  // Sampled items
+  st.sampleIndices.sort((a,b) => a-b).forEach(idx => {
+    bodyHtml += `<tr><td style="color:var(--text-muted)">Sample</td><td style="text-align:center">${idx+1}</td>`;
+    st.headers.forEach(h => {
+      const v = st.data[idx][h];
+      const isNum = !isNaN(parseFloat(v)) && v !== '';
+      bodyHtml += `<td style="${isNum ? 'text-align:right' : ''}">${isNum ? fmt(parseFloat(v)) : v}</td>`;
+    });
+    bodyHtml += '</tr>';
+  });
+  tbody.innerHTML = bodyHtml;
+  document.getElementById(`t9${side}_result`).style.display = '';
+}
+
+function downloadConfExcel(type) {
+  const wb = XLSX.utils.book_new();
+
+  const buildSheet = (side) => {
+    const st = t9State[side];
+    if (st.data.length === 0) return;
+    const amtCol = val(`t9${side}_amtCol`);
+    const allSelected = [...st.keyIndices, ...st.sampleIndices];
+    const label = side === 'r' ? 'Receivable' : 'Payable';
+
+    // Sheet 1: Selected items
+    const selectedData = [];
+    st.keyIndices.forEach(idx => {
+      const row = { 'Type': 'Key Item', 'Row#': idx + 1 };
+      st.headers.forEach(h => row[h] = st.data[idx][h]);
+      selectedData.push(row);
+    });
+    st.sampleIndices.forEach(idx => {
+      const row = { 'Type': 'Sample', 'Row#': idx + 1 };
+      st.headers.forEach(h => row[h] = st.data[idx][h]);
+      selectedData.push(row);
+    });
+    if (selectedData.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(selectedData);
+      XLSX.utils.book_append_sheet(wb, ws, `${label} - Selected`);
+    }
+
+    // Sheet 2: Full population with marker
+    const fullData = st.data.map((row, idx) => {
+      const newRow = {
+        'Selected': st.keyIndices.includes(idx) ? 'Key' : (st.sampleIndices.includes(idx) ? 'Sample' : ''),
+        'Row#': idx + 1
+      };
+      st.headers.forEach(h => newRow[h] = row[h]);
+      return newRow;
+    });
+    const ws2 = XLSX.utils.json_to_sheet(fullData);
+    XLSX.utils.book_append_sheet(wb, ws2, `${label} - Full`);
+  };
+
+  if (type === 'r' || type === 'both') buildSheet('r');
+  if (type === 'p' || type === 'both') buildSheet('p');
+
+  if (wb.SheetNames.length === 0) { alert('추출된 샘플이 없습니다.'); return; }
+
+  const prefix = type === 'both' ? 'confirmation_combined' : (type === 'r' ? 'confirmation_receivable' : 'confirmation_payable');
+  XLSX.writeFile(wb, `${prefix}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
