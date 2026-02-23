@@ -199,13 +199,10 @@ const DataProcessor = {
         data.forEach(row => {
             row.net_amount = (row.debit || 0) - (row.credit || 0);
 
-            // 차대구분 (음수 금액도 해당 구분으로 표시)
+            // 차대구분: 차변 값이 있으면 차변, 아니면 대변
             const d = row.debit || 0;
-            const c = row.credit || 0;
-            if (d !== 0 && c === 0) row.dc_type = '차변';
-            else if (c !== 0 && d === 0) row.dc_type = '대변';
-            else if (d !== 0 && c !== 0) row.dc_type = '차변/대변';
-            else row.dc_type = '무금액';
+            if (d !== 0) row.dc_type = '차변';
+            else row.dc_type = '대변';
 
             // 월 추출
             if (row.date instanceof Date && !isNaN(row.date.getTime())) {
