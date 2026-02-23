@@ -90,6 +90,9 @@ const DataProcessor = {
     applyMapping(mapping) {
         if (!this.rawData) throw new Error('데이터가 로드되지 않았습니다.');
 
+        // 매핑에 사용된 원본 컬럼명 목록
+        const mappedSourceCols = new Set(Object.values(mapping).filter(v => v && v !== ''));
+
         this.mappedData = this.rawData.map(row => {
             const mapped = {};
             for (const [stdField, sourceCol] of Object.entries(mapping)) {
@@ -97,6 +100,8 @@ const DataProcessor = {
                     mapped[stdField] = row[sourceCol] ?? '';
                 }
             }
+            // 원본 row 전체를 보존 (매핑되지 않은 필드 포함)
+            mapped._raw = { ...row };
             return mapped;
         });
 

@@ -71,12 +71,25 @@ const ReportGenerator = {
     generateProcessedLedgerExcel(data) {
         const wb = XLSX.utils.book_new();
 
-        const headers = ['회계일','전표번호','계정과목코드','계정과목','차변금액','대변금액',
+        // 가공 필드 (고정)
+        const processedHeaders = ['회계일','전표번호','계정과목코드','계정과목','차변금액','대변금액',
                         '증감','차대구분','월','적요','기표자','승인자','요일'];
+
+        // 원본 컬럼 수집 (_raw가 있는 행에서)
+        const rawColSet = new Set();
+        data.forEach(r => {
+            if (r._raw) Object.keys(r._raw).forEach(k => rawColSet.add(k));
+        });
+        const rawCols = [...rawColSet];
+
+        // 원본 컬럼이 있으면 구분선 + 원본 헤더 추가
+        const headers = rawCols.length > 0
+            ? [...processedHeaders, '', ...rawCols.map(c => '[원본] ' + c)]
+            : processedHeaders;
         const wsData = [headers];
 
         data.forEach(r => {
-            wsData.push([
+            const processedRow = [
                 r.date instanceof Date ? DataProcessor.formatDate(r.date) : (r.date || ''),
                 r.entry_no || '',
                 r.account_code || '',
@@ -90,14 +103,29 @@ const ReportGenerator = {
                 r.preparer || '',
                 r.approver || '',
                 r.weekday_name || '',
-            ]);
+            ];
+
+            if (rawCols.length > 0) {
+                processedRow.push(''); // 구분 빈 열
+                rawCols.forEach(col => {
+                    const val = r._raw ? (r._raw[col] ?? '') : '';
+                    processedRow.push(val);
+                });
+            }
+
+            wsData.push(processedRow);
         });
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        ws['!cols'] = [
+        const colWidths = [
             {wch:12},{wch:28},{wch:16},{wch:30},{wch:18},{wch:18},
             {wch:18},{wch:10},{wch:6},{wch:45},{wch:10},{wch:10},{wch:10}
         ];
+        if (rawCols.length > 0) {
+            colWidths.push({wch:3}); // 구분 열
+            rawCols.forEach(() => colWidths.push({wch:18}));
+        }
+        ws['!cols'] = colWidths;
 
         XLSX.utils.book_append_sheet(wb, ws, '가공원장');
         return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
