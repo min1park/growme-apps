@@ -9,23 +9,28 @@ const ReportGenerator = {
         data.forEach(r => {
             const key = r.account_code + '||' + r.account_name;
             if (!map[key]) map[key] = { code: r.account_code, name: r.account_name,
-                                         전기이월: 0, 차변: 0, 대변: 0, '차변/대변': 0, 무금액: 0 };
-            const dc = r.dc_type || '무금액';
-            map[key][dc] = (map[key][dc] || 0) + (r.net_amount || 0);
+                                         전기이월: 0, 차변: 0, 대변: 0 };
+            const dc = r.dc_type || '';
+            if (dc === '전기이월') {
+                map[key].전기이월 += (r.net_amount || 0);
+            } else {
+                // 차변/대변 금액을 각각 합산 (음수 포함)
+                map[key].차변 += (r.debit || 0);
+                map[key].대변 += (r.credit || 0);
+            }
         });
 
         const rows = Object.values(map).sort((a, b) => a.code < b.code ? -1 : 1);
         rows.forEach(r => {
-            r.총합계 = (r.전기이월 || 0) + (r.차변 || 0) + (r.대변 || 0) +
-                       (r['차변/대변'] || 0) + (r.무금액 || 0);
+            r.기말 = (r.전기이월 || 0) + (r.차변 || 0) - (r.대변 || 0);
         });
 
-        const total = { code: '총합계', name: '', 전기이월: 0, 차변: 0, 대변: 0, 총합계: 0 };
+        const total = { code: '총합계', name: '', 전기이월: 0, 차변: 0, 대변: 0, 기말: 0 };
         rows.forEach(r => {
             total.전기이월 += r.전기이월 || 0;
             total.차변 += r.차변 || 0;
             total.대변 += r.대변 || 0;
-            total.총합계 += r.총합계 || 0;
+            total.기말 += r.기말 || 0;
         });
         rows.push(total);
 
@@ -151,9 +156,9 @@ const ReportGenerator = {
 
         // 2. 계정별 증감표
         if (accountSummary && accountSummary.length > 0) {
-            const wsData = [['계정과목코드','계정과목','전기이월','차변','대변','총합계']];
+            const wsData = [['계정과목코드','계정과목','전기이월','차변','대변','기말']];
             accountSummary.forEach(r => {
-                wsData.push([r.code, r.name, r.전기이월||0, r.차변||0, r.대변||0, r.총합계||0]);
+                wsData.push([r.code, r.name, r.전기이월||0, r.차변||0, r.대변||0, r.기말||0]);
             });
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             ws['!cols'] = [{wch:16},{wch:30},{wch:18},{wch:18},{wch:18},{wch:18}];

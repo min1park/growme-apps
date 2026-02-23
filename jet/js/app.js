@@ -375,7 +375,7 @@ function renderOutputs() {
 }
 
 function renderAccountSummary(summary) {
-    const headers = ['계정과목코드','계정과목','전기이월','차변','대변','총합계'];
+    const headers = ['계정과목코드','계정과목','전기이월','차변','대변','기말'];
     const rows = summary.map(r => ({
         cells: [
             { value: r.code, isNum: false },
@@ -383,7 +383,7 @@ function renderAccountSummary(summary) {
             { value: DataProcessor.formatNumber(r.전기이월), isNum: true },
             { value: DataProcessor.formatNumber(r.차변), isNum: true },
             { value: DataProcessor.formatNumber(r.대변), isNum: true },
-            { value: DataProcessor.formatNumber(r.총합계), isNum: true },
+            { value: DataProcessor.formatNumber(r.기말), isNum: true },
         ]
     }));
     document.getElementById('account-summary-table').innerHTML =
