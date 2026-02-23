@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GrowMe Apps - 감사도구 포털</title>
+    <title>GrowMe Apps</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,20 +15,47 @@
         .header {
             background: linear-gradient(135deg, #1a73e8, #0d47a1);
             color: white;
-            padding: 60px 20px;
+            padding: 60px 20px 30px;
             text-align: center;
         }
         .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
         .header p { font-size: 1.1rem; opacity: 0.9; }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        .tab-btn {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+        }
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .tab-btn.active {
+            background: white;
+            color: #1a73e8;
+        }
         .container {
             max-width: 1000px;
-            margin: -40px auto 40px;
+            margin: -20px auto 40px;
             padding: 0 20px;
         }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         .app-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 24px;
+            padding-top: 20px;
         }
         .app-card {
             background: white;
@@ -63,6 +90,13 @@
         }
         .status-live { background: #e8f5e9; color: #2e7d32; }
         .status-soon { background: #fff3e0; color: #e65100; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state p { font-size: 1rem; }
         .footer {
             text-align: center;
             padding: 40px 20px;
@@ -74,80 +108,106 @@
 <body>
     <div class="header">
         <h1>GrowMe Apps</h1>
-        <p>회계감사 업무 자동화 도구 모음</p>
+        <p>업무 자동화 도구 모음</p>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('audit')">감사 도구</button>
+            <button class="tab-btn" onclick="switchTab('etc')">기타</button>
+        </div>
     </div>
 
     <div class="container">
-        <div class="app-grid">
-            <a href="./jet/" class="app-card">
-                <div class="app-icon" style="background: #e3f2fd;">📒</div>
-                <h3>Journal Entry Test</h3>
-                <p>분개장 업로드, 필드 매핑, 기초잔액 통합, 
-                   계정별·월별 증감표 생성 및 이상 분개 탐지</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+        <!-- 감사 도구 탭 -->
+        <div id="tab-audit" class="tab-content active">
+            <div class="app-grid">
+                <a href="./jet/" class="app-card">
+                    <div class="app-icon" style="background: #e3f2fd;">📒</div>
+                    <h3>Journal Entry Test</h3>
+                    <p>분개장 업로드, 필드 매핑, 기초잔액 통합,
+                       계정별·월별 증감표 생성 및 이상 분개 탐지</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="./dsd-to-excel/" class="app-card">
-                <div class="app-icon" style="background: #fff8e1;">📄</div>
-                <h3>DSD → Excel 변환기</h3>
-                <p>DART 감사보고서(.dsd) 파일을 Excel(.xlsx)로
-                   브라우저에서 바로 변환</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+                <a href="./dsd-to-excel/" class="app-card">
+                    <div class="app-icon" style="background: #fff8e1;">📄</div>
+                    <h3>DSD → Excel 변환기</h3>
+                    <p>DART 감사보고서(.dsd) 파일을 Excel(.xlsx)로
+                       브라우저에서 바로 변환</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="./audit-sampling/" class="app-card">
-                <div class="app-icon" style="background: #fce4ec;">🎯</div>
-                <h3>Audit Sampling</h3>
-                <p>모집단 업로드 후 MUS, 랜덤, 층화추출 등
-                   다양한 표본추출 자동 수행</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+                <a href="./audit-sampling/" class="app-card">
+                    <div class="app-icon" style="background: #fce4ec;">🎯</div>
+                    <h3>Audit Sampling</h3>
+                    <p>모집단 업로드 후 MUS, 랜덤, 층화추출 등
+                       다양한 표본추출 자동 수행</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="./ifrs16-lease-calculator/" class="app-card">
-                <div class="app-icon" style="background: #e8f5e9;">📐</div>
-                <h3>IFRS 16 리스 계산기</h3>
-                <p>사용권자산·리스부채 계산, 상각표 생성,
-                   전대리스 포함 IFRS 16 자동 산출</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+                <a href="./ifrs16-lease-calculator/" class="app-card">
+                    <div class="app-icon" style="background: #e8f5e9;">📐</div>
+                    <h3>IFRS 16 리스 계산기</h3>
+                    <p>사용권자산·리스부채 계산, 상각표 생성,
+                       전대리스 포함 IFRS 16 자동 산출</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="./excel-sheet-manager/" class="app-card">
-                <div class="app-icon" style="background: #f3e5f5;">📊</div>
-                <h3>엑셀 시트 관리</h3>
-                <p>엑셀 파일의 시트 병합, 분할,
-                   시트별 개별 파일 분리</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+                <a href="./excel-sheet-manager/" class="app-card">
+                    <div class="app-icon" style="background: #f3e5f5;">📊</div>
+                    <h3>엑셀 시트 관리</h3>
+                    <p>엑셀 파일의 시트 병합, 분할,
+                       시트별 개별 파일 분리</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="./excel-sheet-split/" class="app-card">
-                <div class="app-icon" style="background: #e1f5fe;">✂️</div>
-                <h3>엑셀 시트 분리</h3>
-                <p>엑셀 파일의 각 시트를
-                   개별 파일로 분리 저장</p>
-                <span class="app-status status-live">● 사용 가능</span>
-            </a>
+                <a href="./excel-sheet-split/" class="app-card">
+                    <div class="app-icon" style="background: #e1f5fe;">✂️</div>
+                    <h3>엑셀 시트 분리</h3>
+                    <p>엑셀 파일의 각 시트를
+                       개별 파일로 분리 저장</p>
+                    <span class="app-status status-live">● 사용 가능</span>
+                </a>
 
-            <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
-                <div class="app-icon" style="background: #e8eaf6;">📊</div>
-                <h3>Financial Analytics</h3>
-                <p>재무제표 업로드 후 추세분석, 비율분석, 
-                   이상치 탐지 등 분석적 절차 자동화</p>
-                <span class="app-status status-soon">● 준비 중</span>
-            </a>
+                <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
+                    <div class="app-icon" style="background: #e8eaf6;">📊</div>
+                    <h3>Financial Analytics</h3>
+                    <p>재무제표 업로드 후 추세분석, 비율분석,
+                       이상치 탐지 등 분석적 절차 자동화</p>
+                    <span class="app-status status-soon">● 준비 중</span>
+                </a>
 
-            <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
-                <div class="app-icon" style="background: #e0f2f1;">✅</div>
-                <h3>Audit Checklist</h3>
-                <p>감사 체크리스트 관리, 진행상황 추적, 
-                   팀원별 업무 배분 및 현황 대시보드</p>
-                <span class="app-status status-soon">● 준비 중</span>
-            </a>
+                <a href="#" class="app-card" onclick="return false;" style="opacity:0.6;">
+                    <div class="app-icon" style="background: #e0f2f1;">✅</div>
+                    <h3>Audit Checklist</h3>
+                    <p>감사 체크리스트 관리, 진행상황 추적,
+                       팀원별 업무 배분 및 현황 대시보드</p>
+                    <span class="app-status status-soon">● 준비 중</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 기타 탭 -->
+        <div id="tab-etc" class="tab-content">
+            <div class="app-grid">
+                <div class="empty-state">
+                    <div class="icon">📦</div>
+                    <p>준비 중인 앱이 곧 추가됩니다</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>© 2026 GrowMe · 회계 밖 세상 · 
+        <p>© 2026 GrowMe · 회계 밖 세상 ·
            <a href="https://growme.kr" style="color:#1a73e8;">growme.kr</a></p>
     </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
 </body>
 </html>
