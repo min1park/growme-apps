@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel → CSV 변환기 (Access 호환)</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    max-width: 800px;
+    width: 100%;
+    padding: 40px;
+  }
+  h1 {
+    font-size: 24px;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  /* Options */
+  .options-bar {
+    display: none;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .options-bar.show { display: flex; }
+  .options-bar label {
+    font-size: 13px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .options-bar input[type="number"] {
+    width: 50px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .opt-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #e65100;
+    margin-right: 4px;
+  }
+
+  /* Drop Zone */
+  .drop-zone {
+    border: 2px dashed #c5cae9;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafbff;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: #5c6bc0;
+    background: #eef0ff;
+  }
+  .drop-zone-icon { font-size: 48px; margin-bottom: 12px; }
+  .drop-zone-text { font-size: 16px; color: #555; margin-bottom: 8px; }
+  .drop-zone-hint { font-size: 13px; color: #aaa; }
+  .drop-zone input[type="file"] { display: none; }
+
+  /* File Info */
+  .file-info {
+    display: none;
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #f5f7fa;
+    border-radius: 10px;
+    border: 1px solid #e8ecf1;
+  }
+  .file-info.show { display: block; }
+  .file-name { font-weight: 600; font-size: 15px; color: #333; margin-bottom: 4px; word-break: break-all; }
+  .file-meta { font-size: 13px; color: #888; }
+
+  /* Sheet Table */
+  .sheet-section { display: none; margin-top: 24px; }
+  .sheet-section.show { display: block; }
+  .sheet-section h2 { font-size: 16px; color: #333; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    background: #5c6bc0; color: #fff;
+    padding: 10px 14px; text-align: left; font-weight: 500;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #eee; color: #444; }
+  tbody tr:hover { background: #f9f9ff; }
+  tbody tr:last-child td:first-child { border-radius: 0 0 0 8px; }
+  tbody tr:last-child td:last-child { border-radius: 0 0 8px 0; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 16px; border: none; border-radius: 6px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-download { background: #e8f5e9; color: #2e7d32; }
+  .btn-download:hover { background: #c8e6c9; }
+  .btn-all {
+    background: #5c6bc0; color: #fff;
+    padding: 12px 28px; font-size: 15px; border-radius: 10px; margin-top: 20px;
+  }
+  .btn-all:hover { background: #4a59b0; }
+  .btn-reset {
+    background: #fff; color: #888; border: 1px solid #ddd;
+    padding: 12px 28px; font-size: 15px; border-radius: 10px;
+    margin-top: 20px; margin-left: 10px;
+  }
+  .btn-reset:hover { background: #f5f5f5; }
+  .actions { text-align: center; }
+
+  /* Warning */
+  .warn-box {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #fff3e0;
+    border: 1px solid #ffcc80;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #e65100;
+    line-height: 1.6;
+  }
+  .warn-box.show { display: block; }
+  .warn-box strong { color: #bf360c; }
+  .warn-item { margin: 2px 0; padding-left: 12px; }
+
+  /* Preview */
+  .preview-section { display: none; margin-top: 24px; }
+  .preview-section.show { display: block; }
+  .preview-section h3 { font-size: 14px; color: #555; margin-bottom: 8px; }
+  .preview-wrap {
+    overflow-x: auto; border: 1px solid #e0e0e0;
+    border-radius: 8px; max-height: 280px; overflow-y: auto;
+  }
+  .preview-wrap table { font-size: 12px; min-width: 600px; }
+  .preview-wrap thead th {
+    background: #78909c; padding: 6px 10px;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .preview-wrap tbody td { padding: 5px 10px; white-space: nowrap; }
+  .fixed-col { background: #e3f2fd !important; color: #1565c0 !important; font-weight: 600; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #333; color: #fff; padding: 12px 24px;
+    border-radius: 8px; font-size: 14px; opacity: 0;
+    transition: all 0.3s; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Excel → CSV 변환기</h1>
+  <p class="subtitle">.xlsx / .xls 파일을 Access 호환 CSV로 변환합니다 (중복 필드명 / 빈 헤더 자동 수정)</p>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">📂</div>
+    <div class="drop-zone-text">파일을 여기에 드래그하거나 클릭하세요</div>
+    <div class="drop-zone-hint">.xlsx, .xls 파일 지원</div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+  </div>
+
+  <div class="file-info" id="fileInfo">
+    <div class="file-name" id="fileName"></div>
+    <div class="file-meta" id="fileMeta"></div>
+  </div>
+
+  <div class="options-bar" id="optionsBar">
+    <span class="opt-title">옵션</span>
+    <label>
+      <input type="checkbox" id="chkFixHeaders" checked>
+      중복/빈 필드명 자동 수정
+    </label>
+    <label>
+      <input type="checkbox" id="chkSkipEmpty" checked>
+      빈 행 건너뛰기 (헤더 자동 탐지)
+    </label>
+    <label>
+      <input type="checkbox" id="chkForceDouble" checked>
+      숫자 → Double 변환 (Access 대용량 숫자 호환)
+    </label>
+  </div>
+
+  <div class="warn-box" id="warnBox"></div>
+
+  <div class="sheet-section" id="sheetSection">
+    <h2>시트 목록</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>시트명</th>
+          <th>행</th>
+          <th>열</th>
+          <th>수정사항</th>
+          <th>미리보기</th>
+          <th>다운로드</th>
+        </tr>
+      </thead>
+      <tbody id="sheetBody"></tbody>
+    </table>
+    <div class="actions">
+      <button class="btn btn-all" id="btnDownloadAll">전체 다운로드</button>
+      <button class="btn btn-reset" id="btnReset">초기화</button>
+    </div>
+  </div>
+
+  <div class="preview-section" id="previewSection">
+    <h3 id="previewTitle"></h3>
+    <div class="preview-wrap" id="previewWrap"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const dropZone = $('dropZone'), fileInput = $('fileInput');
+const fileInfo = $('fileInfo'), fileName = $('fileName'), fileMeta = $('fileMeta');
+const sheetSection = $('sheetSection'), sheetBody = $('sheetBody');
+const previewSection = $('previewSection'), previewTitle = $('previewTitle'), previewWrap = $('previewWrap');
+const btnDownloadAll = $('btnDownloadAll'), btnReset = $('btnReset');
+const optionsBar = $('optionsBar'), warnBox = $('warnBox');
+const chkFixHeaders = $('chkFixHeaders'), chkSkipEmpty = $('chkSkipEmpty'), chkForceDouble = $('chkForceDouble');
+
+let workbook = null;
+let currentFileName = '';
+let processedSheets = {};  // { sheetName: { headers, data, warnings, skippedRows } }
+
+// ───── Drop Zone ─────
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls'].includes(ext)) { showToast('xlsx 또는 xls 파일만 지원합니다'); return; }
+
+  currentFileName = file.name.replace(/\.[^.]+$/, '');
+  const reader = new FileReader();
+  reader.onload = e => {
+    workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+    renderFileInfo(file);
+    processAllSheets();
+    renderSheets();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderFileInfo(file) {
+  const size = file.size < 1048576
+    ? (file.size / 1024).toFixed(1) + ' KB'
+    : (file.size / 1048576).toFixed(1) + ' MB';
+  fileName.textContent = file.name;
+  fileMeta.textContent = size + ' \xB7 ' + workbook.SheetNames.length + '개 시트';
+  fileInfo.classList.add('show');
+  optionsBar.classList.add('show');
+}
+
+// ───── Core: 시트 분석 & 헤더 수정 ─────
+function processAllSheets() {
+  processedSheets = {};
+  const doFix = chkFixHeaders.checked;
+  const doSkip = chkSkipEmpty.checked;
+
+  workbook.SheetNames.forEach(name => {
+    const ws = workbook.Sheets[name];
+    const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
+    if (!raw.length) { processedSheets[name] = { headers: [], data: [], warnings: [], skippedRows: 0 }; return; }
+
+    // 1) 빈 행 건너뛰기 → 실제 헤더 행 찾기
+    let headerIdx = 0;
+    if (doSkip) {
+      headerIdx = findHeaderRow(raw);
+    }
+
+    const skippedRows = headerIdx;
+    const headerRow = raw[headerIdx] || [];
+    const dataRows = raw.slice(headerIdx + 1);
+
+    // 2) 헤더 수정
+    const warnings = [];
+    let finalHeaders;
+
+    if (doFix) {
+      finalHeaders = fixHeaders(headerRow, warnings);
+    } else {
+      finalHeaders = headerRow.map(h => h === '' || h == null ? '' : String(h));
+    }
+
+    // 3) 숫자 컬럼 탐지 (Access Double 변환용)
+    const numericCols = new Set();
+    if (chkForceDouble.checked) {
+      for (let c = 0; c < finalHeaders.length; c++) {
+        let isNum = false;
+        for (let r = 0; r < Math.min(dataRows.length, 50); r++) {
+          const v = dataRows[r][c];
+          if (v !== '' && v != null) {
+            isNum = (typeof v === 'number');
+            break;
+          }
+        }
+        if (isNum) numericCols.add(c);
+      }
+    }
+
+    processedSheets[name] = { headers: finalHeaders, data: dataRows, warnings, skippedRows, numericCols };
+  });
+}
+
+// 헤더 행 자동 탐지: 첫 번째 "의미 있는" 행 찾기
+function findHeaderRow(rows) {
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const row = rows[i];
+    // 절반 이상 셀이 비어있지 않으면 헤더 후보
+    const filled = row.filter(c => c !== '' && c != null).length;
+    if (filled >= Math.ceil(row.length * 0.4)) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+// 중복/빈 헤더 수정
+function fixHeaders(headerRow, warnings) {
+  const seen = {};
+  return headerRow.map((h, i) => {
+    let name = (h === '' || h == null) ? '' : String(h);
+
+    // 빈 헤더 → Column_N
+    if (name.trim() === '') {
+      name = 'Column_' + (i + 1);
+      warnings.push('열 ' + (i + 1) + ': 빈 헤더 → ' + name);
+    }
+
+    // 숫자로만 된 필드명 → 앞에 M 접두사 (Access 금지)
+    if (/^-?\d+\.?\d*$/.test(name)) {
+      const orig = name;
+      name = 'M' + name;
+      warnings.push('열 ' + (i + 1) + ': 숫자 헤더 "' + orig + '" → "' + name + '"');
+    }
+
+    // Access 금지 문자 제거: . ! ` [ ]
+    const cleaned = name.replace(/[.!`\[\]]/g, '_');
+    if (cleaned !== name) {
+      warnings.push('열 ' + (i + 1) + ': 특수문자 제거 "' + name + '" → "' + cleaned + '"');
+      name = cleaned;
+    }
+
+    // 64자 초과 자르기
+    if (name.length > 64) {
+      name = name.substring(0, 60) + '_' + (i + 1);
+      warnings.push('열 ' + (i + 1) + ': 이름 길이 초과 → 잘라냄');
+    }
+
+    // 중복 처리
+    if (name in seen) {
+      seen[name]++;
+      const newName = name + '_' + seen[name];
+      warnings.push('열 ' + (i + 1) + ': 중복 "' + name + '" → "' + newName + '"');
+      name = newName;
+    } else {
+      seen[name] = 1;
+    }
+
+    return name;
+  });
+}
+
+// ───── Render ─────
+function renderSheets() {
+  sheetBody.innerHTML = '';
+  previewSection.classList.remove('show');
+  warnBox.classList.remove('show');
+
+  let allWarnings = [];
+
+  workbook.SheetNames.forEach(name => {
+    const info = processedSheets[name];
+    const rows = info.data.length;
+    const cols = info.headers.length;
+
+    const numColNames = [...(info.numericCols || [])].map(i => info.headers[i]);
+    const sheetWarnings = [...info.warnings];
+    if (numColNames.length > 0) {
+      sheetWarnings.push('Double 변환 적용: ' + numColNames.join(', '));
+    }
+    if (sheetWarnings.length > 0) {
+      allWarnings.push({ sheet: name, items: sheetWarnings });
+    }
+
+    const tr = document.createElement('tr');
+    const warnCount = sheetWarnings.length;
+    const warnBadge = warnCount > 0
+      ? '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:12px;">' + warnCount + '건 수정</span>'
+      : '<span style="color:#4caf50;font-size:12px;">없음</span>';
+
+    tr.innerHTML =
+      '<td><strong>' + name + '</strong>' + (info.skippedRows > 0 ? ' <span style="font-size:11px;color:#999;">(상단 ' + info.skippedRows + '행 건너뜀)</span>' : '') + '</td>' +
+      '<td>' + rows.toLocaleString() + '</td>' +
+      '<td>' + cols + '</td>' +
+      '<td>' + warnBadge + '</td>' +
+      '<td><button class="btn btn-download" data-action="preview" data-sheet="' + name + '">보기</button></td>' +
+      '<td><button class="btn btn-download" data-action="download" data-sheet="' + name + '">CSV</button></td>';
+    sheetBody.appendChild(tr);
+  });
+
+  // 이벤트 위임
+  sheetBody.onclick = e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const sheet = btn.dataset.sheet;
+    if (btn.dataset.action === 'preview') showPreview(sheet);
+    else if (btn.dataset.action === 'download') downloadSheet(sheet);
+  };
+
+  // 경고 표시
+  if (allWarnings.length > 0) {
+    let html = '<strong>자동 수정된 필드명:</strong><br>';
+    allWarnings.forEach(w => {
+      html += '<br><strong>[' + w.sheet + ']</strong><br>';
+      w.items.forEach(item => { html += '<div class="warn-item">' + item + '</div>'; });
+    });
+    warnBox.innerHTML = html;
+    warnBox.classList.add('show');
+  }
+
+  sheetSection.classList.add('show');
+}
+
+// ───── CSV 생성 (수정된 헤더 적용) ─────
+function buildCSV(sheetName) {
+  const info = processedSheets[sheetName];
+  const numCols = info.numericCols || new Set();
+
+  function formatCell(cell, colIdx, isHeader) {
+    if (cell === '' || cell == null) return '';
+    // 숫자 컬럼 + 데이터행 → .0 붙여서 Access가 Double로 인식
+    if (!isHeader && numCols.has(colIdx) && typeof cell === 'number') {
+      return Number.isInteger(cell) ? cell + '.0' : String(cell);
+    }
+    const s = String(cell);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  let lines = [];
+  // Header
+  lines.push(info.headers.map((h, i) => formatCell(h, i, true)).join(','));
+  // Data
+  info.data.forEach(row => {
+    lines.push(row.map((cell, i) => formatCell(cell, i, false)).join(','));
+  });
+  return lines.join('\r\n');
+}
+
+function downloadSheet(sheetName) {
+  const csv = buildCSV(sheetName);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, currentFileName + '_' + sheetName + '.csv');
+  showToast('"' + sheetName + '" 다운로드 완료');
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+btnDownloadAll.addEventListener('click', () => {
+  workbook.SheetNames.forEach(name => downloadSheet(name));
+  showToast('전체 시트 다운로드 완료');
+});
+
+btnReset.addEventListener('click', () => {
+  workbook = null; currentFileName = ''; processedSheets = {};
+  fileInput.value = '';
+  fileInfo.classList.remove('show');
+  sheetSection.classList.remove('show');
+  previewSection.classList.remove('show');
+  optionsBar.classList.remove('show');
+  warnBox.classList.remove('show');
+});
+
+// 옵션 변경 시 재처리
+chkFixHeaders.addEventListener('change', () => { if (workbook) { processAllSheets(); renderSheets(); } });
+chkSkipEmpty.addEventListener('change', () => { if (workbook) { processAllSheets(); renderSheets(); } });
+chkForceDouble.addEventListener('change', () => { if (workbook) { processAllSheets(); renderSheets(); } });
+
+// ───── Preview ─────
+function showPreview(sheetName) {
+  const info = processedSheets[sheetName];
+  const maxRows = Math.min(info.data.length, 20);
+
+  previewTitle.textContent = '"' + sheetName + '" 미리보기 (처음 ' + maxRows + '행)';
+
+  let html = '<table><thead><tr>';
+  info.headers.forEach((h, i) => {
+    // 수정된 헤더는 하이라이트
+    const orig = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' })[info.skippedRows];
+    const wasFixed = orig && String(orig[i] || '') !== h;
+    html += '<th' + (wasFixed ? ' class="fixed-col" title="원본: ' + (orig[i] || '(빈값)') + '"' : '') + '>' + h + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  for (let r = 0; r < maxRows; r++) {
+    html += '<tr>';
+    const row = info.data[r] || [];
+    for (let c = 0; c < info.headers.length; c++) {
+      const v = row[c] !== undefined && row[c] !== null ? row[c] : '';
+      html += '<td>' + v + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  previewWrap.innerHTML = html;
+  previewSection.classList.add('show');
+  previewSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+
+</body>
+</html>
