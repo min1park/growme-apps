@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재무제표 정합성 검토</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #0F1E3C, #1A3A6B);
+            color: white;
+            padding: 48px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2rem; margin-bottom: 8px; }
+        .header p { font-size: 1rem; opacity: 0.9; }
+        .container {
+            max-width: 700px;
+            margin: -30px auto 40px;
+            padding: 0 20px;
+        }
+        .download-card {
+            background: white;
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .download-icon { font-size: 4rem; margin-bottom: 16px; }
+        .download-card h2 { font-size: 1.3rem; margin-bottom: 8px; }
+        .download-card .version { color: #999; font-size: 0.85rem; margin-bottom: 20px; }
+        .download-btn {
+            display: inline-block;
+            background: #2563EB;
+            color: white;
+            padding: 14px 36px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .download-btn:hover { background: #1d4ed8; }
+        .file-info {
+            margin-top: 12px;
+            color: #999;
+            font-size: 0.8rem;
+        }
+        .features {
+            margin-top: 28px;
+            text-align: left;
+        }
+        .features h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: #555;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: #666;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .features li::before {
+            content: '✓ ';
+            color: #2563EB;
+            font-weight: bold;
+        }
+        .notice {
+            margin-top: 24px;
+            padding: 16px;
+            background: #eff6ff;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            color: #666;
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            text-align: center;
+            width: 100%;
+            color: #2563EB;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>재무제표 정합성 검토</h1>
+        <p>Financial Statement Cross-Validation</p>
+    </div>
+
+    <div class="container">
+        <div class="download-card">
+            <div class="download-icon">📋</div>
+            <h2>재무제표 정합성 검토 앱</h2>
+            <p class="version">React (JSX) · Anthropic Claude API 연동</p>
+            <a href="./재무제표_정합성검토_앱.jsx" class="download-btn" download>JSX 파일 다운로드</a>
+            <p class="file-info">재무제표_정합성검토_앱.jsx · React 컴포넌트</p>
+
+            <div class="features">
+                <h3>주요 기능</h3>
+                <ul>
+                    <li>Excel 업로드 (BS/IS/CF/CE + 주석 시트)</li>
+                    <li>AI가 재무제표 본문 ↔ 주석 간 수치 불일치 자동 탐지</li>
+                    <li>심각도별 분류 (높음/중간/낮음) 및 원인 추정</li>
+                    <li>일치/불일치 항목 리포트 생성</li>
+                </ul>
+            </div>
+
+            <div class="notice">
+                <b>개발자용:</b> React 프로젝트에서 사용하는 JSX 컴포넌트입니다.
+                xlsx 라이브러리와 Anthropic API 키가 필요합니다.
+                <br><br>
+                <code>npm install xlsx</code> 설치 후,
+                Anthropic API 키를 설정하여 사용하세요.
+            </div>
+        </div>
+
+        <a href="../" class="back-link">← GrowMe Apps 포털로 돌아가기</a>
+    </div>
+</body>
+</html>
