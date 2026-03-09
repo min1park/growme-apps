@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GrowMe Apps</title>
-    <script src="/auth/config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -237,25 +236,6 @@
             event.target.classList.add('active');
         }
 
-        // 보호된 앱에 자물쇠 아이콘 표시
-        document.addEventListener('DOMContentLoaded', function() {
-            var config = window.AUTH_CONFIG;
-            if (!config || !config.passwordHash || !config.protectedApps) return;
-            document.querySelectorAll('.app-card').forEach(function(card) {
-                var href = card.getAttribute('href');
-                if (!href || href === '#') return;
-                var match = config.protectedApps.some(function(app) {
-                    return href.replace('./', '/').indexOf(app) !== -1 || app.indexOf(href.replace('./', '/')) !== -1;
-                });
-                if (match) {
-                    card.style.position = 'relative';
-                    var lock = document.createElement('span');
-                    lock.textContent = '🔒';
-                    lock.style.cssText = 'position:absolute;top:16px;right:16px;font-size:1.2rem;';
-                    card.appendChild(lock);
-                }
-            });
-        });
     </script>
 </body>
 </html>
