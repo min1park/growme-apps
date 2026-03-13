@@ -395,10 +395,10 @@ function splitFinancialStatements(fsSection) {
 
 /**
  * 주석 SECTION-2를 주석 번호(N. 제목) 기준으로 분리.
- * maxSheetNum 이후의 주석은 마지막 시트에 합침.
+ * 각 주석 번호마다 개별 시트 생성 (제한 없음).
  * @returns {Array<{num: number, elements: Array}>}
  */
-function splitNotes(notesSection, maxSheetNum = 33) {
+function splitNotes(notesSection) {
     if (!notesSection) return [];
 
     // 모든 자식 수집 (TITLE 제외)
@@ -427,7 +427,7 @@ function splitNotes(notesSection, maxSheetNum = 33) {
     }
 
     // 각 주석의 요소 범위 결정
-    const rawNotes = [];
+    const notes = [];
     for (let idx = 0; idx < noteStarts.length; idx++) {
         const startI = noteStarts[idx].index;
         const endI = (idx + 1 < noteStarts.length) ? noteStarts[idx + 1].index : children.length;
@@ -439,21 +439,7 @@ function splitNotes(notesSection, maxSheetNum = 33) {
         }
 
         if (noteElements.length > 0) {
-            rawNotes.push({ num: noteStarts[idx].num, elements: noteElements });
-        }
-    }
-
-    // maxSheetNum 이후의 주석을 마지막 시트에 합침
-    const notes = [];
-    for (const note of rawNotes) {
-        if (note.num <= maxSheetNum) {
-            notes.push(note);
-        } else {
-            if (notes.length > 0) {
-                notes[notes.length - 1].elements.push(...note.elements);
-            } else {
-                notes.push(note);
-            }
+            notes.push({ num: noteStarts[idx].num, elements: noteElements });
         }
     }
 
