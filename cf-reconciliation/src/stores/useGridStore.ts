@@ -1,0 +1,288 @@
+import { create } from 'zustand';
+import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey, GridAction } from '@/types';
+import { CFItem } from '@/types/cf-template';
+import { KIFRS_CF_TEMPLATE, getAllCFItems } from '@/data/cf-template-kifrs';
+import { validateGrid, getSubtotalAmount, getRawSubtotalAmount } from '@/engines/validation';
+
+interface GridState {
+  accounts: Account[];
+  cfItems: CFItem[];
+  mappings: CoAMapping[];
+  gridData: Map<CellKey, CellValue>;
+  validation: ValidationResult;
+
+  selectedCell: CellKey | null;
+  editingCell: CellKey | null;
+  collapsedSections: Set<string>;
+  showNonCash: boolean;
+
+  undoStack: GridAction[];
+  redoStack: GridAction[];
+
+  setAccounts: (accounts: Account[]) => void;
+  setMappings: (mappings: CoAMapping[]) => void;
+  initCFItems: () => void;
+
+  setCellValue: (cfItemId: string, accountId: string, value: number | null, memo?: string) => void;
+  deleteCellValue: (cfItemId: string, accountId: string) => void;
+
+  selectCell: (key: CellKey | null) => void;
+  startEditing: (key: CellKey) => void;
+  stopEditing: () => void;
+  toggleSection: (sectionId: string) => void;
+  setShowNonCash: (show: boolean) => void;
+
+  revalidate: () => void;
+
+  getCFAmount: (cfItemId: string) => number;
+  getSubtotal: (subtotalId: string) => number;
+  getRawSubtotal: (subtotalId: string) => number;
+
+  undo: () => void;
+  redo: () => void;
+
+  addCFItem: (item: CFItem, afterItemId?: string) => void;
+  removeCFItem: (itemId: string) => void;
+
+  toJSON: () => object;
+  fromJSON: (data: unknown) => void;
+}
+
+const emptyValidation: ValidationResult = {
+  columnChecks: new Map(),
+  rowChecks: new Map(),
+  cashCheck: 0,
+  passedColumns: 0,
+  totalColumns: 0,
+  passedRows: 0,
+  totalRows: 0,
+};
+
+export const useGridStore = create<GridState>((set, get) => ({
+  accounts: [],
+  cfItems: getAllCFItems(KIFRS_CF_TEMPLATE),
+  mappings: [],
+  gridData: new Map(),
+  validation: emptyValidation,
+
+  selectedCell: null,
+  editingCell: null,
+  collapsedSections: new Set(),
+  showNonCash: true,
+
+  undoStack: [],
+  redoStack: [],
+
+  setAccounts: (accounts) => set({ accounts }),
+  setMappings: (mappings) => set({ mappings }),
+  initCFItems: () => set({ cfItems: getAllCFItems(KIFRS_CF_TEMPLATE) }),
+
+  setCellValue: (cfItemId, accountId, value, memo) => {
+    const state = get();
+    const key = makeCellKey(cfItemId, accountId);
+    const oldValue = state.gridData.get(key) ?? null;
+    const newGridData = new Map(state.gridData);
+
+    if (value === null || value === 0) {
+      newGridData.delete(key);
+    } else {
+      newGridData.set(key, { amount: value, memo });
+    }
+
+    const newValue = value !== null && value !== 0 ? { amount: value, memo } : null;
+    const action: GridAction = {
+      type: 'set',
+      cells: [{ key, oldValue, newValue }],
+      timestamp: Date.now(),
+    };
+
+    set({
+      gridData: newGridData,
+      undoStack: [...state.undoStack.slice(-99), action],
+      redoStack: [],
+    });
+
+    get().revalidate();
+  },
+
+  deleteCellValue: (cfItemId, accountId) => {
+    get().setCellValue(cfItemId, accountId, null);
+  },
+
+  selectCell: (key) => set({ selectedCell: key, editingCell: null }),
+  startEditing: (key) => set({ selectedCell: key, editingCell: key }),
+  stopEditing: () => set({ editingCell: null }),
+  toggleSection: (sectionId) => {
+    const state = get();
+    const newSet = new Set(state.collapsedSections);
+    if (newSet.has(sectionId)) {
+      newSet.delete(sectionId);
+    } else {
+      newSet.add(sectionId);
+    }
+    set({ collapsedSections: newSet });
+  },
+  setShowNonCash: (show) => set({ showNonCash: show }),
+
+  revalidate: () => {
+    const state = get();
+    if (state.accounts.length === 0) return;
+    const validation = validateGrid(state.accounts, state.cfItems, state.mappings, state.gridData);
+    set({ validation });
+  },
+
+  getCFAmount: (cfItemId) => {
+    const state = get();
+    const item = state.cfItems.find(i => i.id === cfItemId);
+    const sign = item?.sign ?? 1;
+    let sum = 0;
+    for (const account of state.accounts) {
+      const key = makeCellKey(cfItemId, account.id);
+      const cell = state.gridData.get(key);
+      if (cell) sum += cell.amount;
+    }
+    return sum * sign; // C-1 fix: sign 적용
+  },
+
+  getSubtotal: (subtotalId) => {
+    const state = get();
+    return getSubtotalAmount(subtotalId, state.cfItems, state.accounts, state.gridData);
+  },
+
+  getRawSubtotal: (subtotalId) => {
+    const state = get();
+    return getRawSubtotalAmount(subtotalId, state.cfItems, state.accounts, state.gridData);
+  },
+
+  undo: () => {
+    const state = get();
+    if (state.undoStack.length === 0) return;
+    const action = state.undoStack[state.undoStack.length - 1];
+    const newGridData = new Map(state.gridData);
+
+    for (const cell of action.cells) {
+      if (cell.oldValue) {
+        newGridData.set(cell.key, cell.oldValue);
+      } else {
+        newGridData.delete(cell.key);
+      }
+    }
+
+    set({
+      gridData: newGridData,
+      undoStack: state.undoStack.slice(0, -1),
+      redoStack: [...state.redoStack, action],
+    });
+    get().revalidate();
+  },
+
+  redo: () => {
+    const state = get();
+    if (state.redoStack.length === 0) return;
+    const action = state.redoStack[state.redoStack.length - 1];
+    const newGridData = new Map(state.gridData);
+
+    for (const cell of action.cells) {
+      if (cell.newValue) {
+        newGridData.set(cell.key, cell.newValue);
+      } else {
+        newGridData.delete(cell.key);
+      }
+    }
+
+    set({
+      gridData: newGridData,
+      redoStack: state.redoStack.slice(0, -1),
+      undoStack: [...state.undoStack, action],
+    });
+    get().revalidate();
+  },
+
+  addCFItem: (item, afterItemId) => {
+    const state = get();
+    const items = [...state.cfItems];
+    if (afterItemId) {
+      const idx = items.findIndex(i => i.id === afterItemId);
+      if (idx >= 0) {
+        items.splice(idx + 1, 0, item);
+      } else {
+        items.push(item);
+      }
+    } else {
+      items.push(item);
+    }
+    set({ cfItems: items });
+  },
+
+  removeCFItem: (itemId) => {
+    const state = get();
+    set({ cfItems: state.cfItems.filter(i => i.id !== itemId) });
+  },
+
+  toJSON: () => {
+    const state = get();
+    return {
+      accounts: state.accounts,
+      cfItems: state.cfItems,
+      mappings: state.mappings,
+      gridData: Array.from(state.gridData.entries()),
+      showNonCash: state.showNonCash,
+    };
+  },
+
+  fromJSON: (data: unknown) => {
+    // C-2 fix: 입력 데이터 검증
+    if (!data || typeof data !== 'object') {
+      console.error('fromJSON: invalid data - not an object');
+      return;
+    }
+
+    const d = data as Record<string, unknown>;
+
+    // 필수 필드 검증
+    const accounts = Array.isArray(d.accounts) ? d.accounts.filter(
+      (a): a is Account =>
+        a !== null && typeof a === 'object' &&
+        'id' in a && 'code' in a && 'name' in a &&
+        typeof (a as Account).openingBalance === 'number' &&
+        typeof (a as Account).closingBalance === 'number' &&
+        typeof (a as Account).change === 'number'
+    ) : [];
+
+    const cfItems = Array.isArray(d.cfItems) && d.cfItems.length > 0
+      ? d.cfItems.filter(
+          (i): i is CFItem =>
+            i !== null && typeof i === 'object' &&
+            'id' in i && 'label' in i && 'sign' in i
+        )
+      : getAllCFItems(KIFRS_CF_TEMPLATE);
+
+    const mappings = Array.isArray(d.mappings) ? d.mappings.filter(
+      (m): m is CoAMapping =>
+        m !== null && typeof m === 'object' &&
+        'accountId' in m && 'bsCategory' in m && 'cfCategory' in m
+    ) : [];
+
+    const gridEntries = Array.isArray(d.gridData) ? d.gridData.filter(
+      (entry): entry is [CellKey, CellValue] =>
+        Array.isArray(entry) && entry.length === 2 &&
+        typeof entry[0] === 'string' && entry[0].includes(':') &&
+        entry[1] !== null && typeof entry[1] === 'object' &&
+        typeof (entry[1] as CellValue).amount === 'number'
+    ) : [];
+
+    set({
+      accounts,
+      cfItems,
+      mappings,
+      gridData: new Map(gridEntries),
+      showNonCash: typeof d.showNonCash === 'boolean' ? d.showNonCash : true,
+      undoStack: [],
+      redoStack: [],
+      selectedCell: null,
+      editingCell: null,
+      collapsedSections: new Set(),
+    });
+    get().revalidate();
+  },
+}));
