@@ -44,7 +44,7 @@ export function NewProjectModal({ open, onOpenChange, onCreate }: NewProjectModa
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">회사명</label>
-            <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="예: 주식회사 샘플" />
+            <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="예: 주식회사 그로우미" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
