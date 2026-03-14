@@ -24,6 +24,77 @@ const SCENE_PROMPT = `당신은 교육 영상의 씬 비주얼 디자이너입�
 {"type":"intro|content|example|list|quote|closing","heading":"메인 제목 (10자 이내)","subheading":"부제목 (선택)","body":"본문 요약 (br 태그 가능)","keywords":["키워드1","키워드2"],"examples":[{"wrong":"틀린 예","correct":"맞는 예","explanation":"설명"}],"badge":"라벨 (인트로/클로징만)"}
 규칙: intro=영상 시작, content=개념 설명, example=예시 비교, list=항목 나열, quote=인용, closing=마무리. heading은 짧게. keywords 2-4개. examples는 example 타입만. badge는 intro/closing만.`;
 
+// ─── VISUAL AI PROVIDERS CONFIG ────────────────────────────────
+const VISUAL_AI_PROVIDERS = {
+  anthropic: {
+    name: "🟤 Anthropic Claude",
+    desc: "Claude Sonnet · 안정적 JSON 출력",
+    keyPlaceholder: "sk-ant-...",
+    keyHelp: "console.anthropic.com → API Keys",
+  },
+  openai: {
+    name: "🟢 OpenAI GPT",
+    desc: "GPT-4o-mini · 빠르고 저렴",
+    keyPlaceholder: "sk-...",
+    keyHelp: "platform.openai.com → API Keys",
+  },
+  gemini: {
+    name: "🔵 Google Gemini",
+    desc: "Gemini 2.0 Flash · 무료 티어 제공",
+    keyPlaceholder: "AIzaSy...",
+    keyHelp: "aistudio.google.com → API Keys",
+  },
+};
+
+// ─── VISUAL AI API CALLS ───────────────────────────────────────
+async function callVisualAI(provider, apiKey, narration, posHint) {
+  const userMsg = `나레이션:\n"${narration}"${posHint}\n\n화면 비주얼 JSON 생성.`;
+
+  if (provider === "anthropic") {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: userMsg }], system: SCENE_PROMPT }),
+    });
+    if (!resp.ok) throw new Error(`Anthropic API error: ${resp.status}`);
+    const data = await resp.json();
+    return data.content?.map((c) => c.text || "").join("") || "";
+  }
+
+  if (provider === "openai") {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 1000, messages: [{ role: "system", content: SCENE_PROMPT }, { role: "user", content: userMsg }], temperature: 0.7 }),
+    });
+    if (!resp.ok) throw new Error(`OpenAI API error: ${resp.status}`);
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || "";
+  }
+
+  if (provider === "gemini") {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SCENE_PROMPT }] },
+        contents: [{ parts: [{ text: userMsg }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1000, responseMimeType: "application/json" },
+      }),
+    });
+    if (!resp.ok) throw new Error(`Gemini API error: ${resp.status}`);
+    const data = await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  }
+
+  throw new Error("Unknown provider");
+}
+
 // ─── TTS PROVIDERS CONFIG ──────────────────────────────────────
 const TTS_PROVIDERS = {
   browser: {
@@ -333,7 +404,7 @@ function NarrationVideoApp() {
     { id: 5, narration: "오늘도 한 걸음 성장했습니다. 구독과 좋아요 부탁드립니다. 다음 영상에서 만나요!", visual: null, duration: 9, audioUrl: null },
   ]);
   const [tts, setTts] = useState({ provider: "browser", apiKey: "", voice: "", model: "tts-1", speed: 1.0, browserVoices: [] });
-  const [anthropicKey, setAnthropicKey] = useState("");
+  const [visualAI, setVisualAI] = useState({ provider: "anthropic", apiKey: "" });
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
   const [audioGenerating, setAudioGenerating] = useState(false);
@@ -398,7 +469,8 @@ function NarrationVideoApp() {
       if (saved) {
         const s = JSON.parse(saved);
         if (s.tts) setTts((prev) => ({ ...prev, provider: s.tts.provider || prev.provider, apiKey: s.tts.apiKey || "", voice: s.tts.voice || "", model: s.tts.model || "tts-1", speed: s.tts.speed ?? 1.0 }));
-        if (s.anthropicKey) setAnthropicKey(s.anthropicKey);
+        if (s.visualAI) setVisualAI((prev) => ({ ...prev, ...s.visualAI }));
+        else if (s.anthropicKey) setVisualAI({ provider: "anthropic", apiKey: s.anthropicKey }); // migrate old setting
         if (s.bgTheme) setBgTheme(s.bgTheme);
       }
     } catch (e) { /* ignore */ }
@@ -409,11 +481,11 @@ function NarrationVideoApp() {
     try {
       localStorage.setItem("narration-maker-settings", JSON.stringify({
         tts: { provider: tts.provider, apiKey: tts.apiKey, voice: tts.voice, model: tts.model, speed: tts.speed },
-        anthropicKey,
+        visualAI,
         bgTheme,
       }));
     } catch (e) { /* ignore */ }
-  }, [tts.provider, tts.apiKey, tts.voice, tts.model, tts.speed, anthropicKey, bgTheme]);
+  }, [tts.provider, tts.apiKey, tts.voice, tts.model, tts.speed, visualAI, bgTheme]);
 
   // ── Load browser voices ──
   useEffect(() => {
@@ -511,27 +583,15 @@ function NarrationVideoApp() {
 
   // ── Generate Visuals ──
   const generateVisuals = async () => {
-    if (!anthropicKey.trim()) { alert("Anthropic API 키를 입력해주세요."); return; }
+    if (!visualAI.apiKey.trim()) { alert(`${VISUAL_AI_PROVIDERS[visualAI.provider].name} API 키를 입력해주세요.`); return; }
     setGenerating(true);
     const updated = [...scenes];
     for (let i = 0; i < updated.length; i++) {
       const s = updated[i]; if (!s.narration.trim()) continue;
-      setGenProgress(`씬 ${i + 1}/${updated.length} 비주얼 생성...`);
+      setGenProgress(`씬 ${i + 1}/${updated.length} 비주얼 생성 (${VISUAL_AI_PROVIDERS[visualAI.provider].name})...`);
       const posHint = i === 0 ? "\n이 씬은 인트로입니다." : i === updated.length - 1 ? "\n이 씬은 클로징입니다." : `\n${i + 1}/${updated.length}번째 씬.`;
       try {
-        const resp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": anthropicKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-          },
-          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: `나레이션:\n"${s.narration}"${posHint}\n\n화면 비주얼 JSON 생성.` }], system: SCENE_PROMPT }),
-        });
-        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
-        const data = await resp.json();
-        const text = data.content?.map((c) => c.text || "").join("") || "";
+        const text = await callVisualAI(visualAI.provider, visualAI.apiKey, s.narration, posHint);
         updated[i] = { ...updated[i], visual: JSON.parse(text.replace(/```json|```/g, "").trim()) };
         updated[i].duration = Math.max(5, Math.round(s.narration.length / 7));
       } catch (err) {
@@ -837,13 +897,32 @@ function NarrationVideoApp() {
       {/* ════════ EDITOR ════════ */}
       {mode === "editor" && (
         <div style={{ width: 900, maxWidth: "95vw", paddingBottom: 40 }}>
-          {/* Anthropic API Key */}
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "16px 24px", marginBottom: 16 }}>
-            <div style={{ fontSize: 14, color: "#f0c040", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-              🔑 Anthropic API 키 <span style={{ fontSize: 10, color: "#666", fontWeight: 400 }}>(비주얼 생성용)</span>
+          {/* Visual AI Provider */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "20px 24px", marginBottom: 16 }}>
+            <div style={{ fontSize: 14, color: "#f0c040", fontWeight: 700, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              🧠 비주얼 생성 AI <span style={{ fontSize: 10, color: "#666", fontWeight: 400 }}>(씬 비주얼 자동 생성)</span>
             </div>
-            <input type="password" style={inputStyle} placeholder="sk-ant-..." value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)} />
-            <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>console.anthropic.com → API Keys</div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+              {Object.entries(VISUAL_AI_PROVIDERS).map(([key, p]) => (
+                <button key={key} onClick={() => setVisualAI((prev) => ({ ...prev, provider: key }))}
+                  style={{
+                    padding: "12px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left", fontFamily: "'Noto Sans KR'", transition: "all 0.15s",
+                    background: visualAI.provider === key ? "rgba(240,192,64,0.1)" : "rgba(255,255,255,0.02)",
+                    border: visualAI.provider === key ? "1px solid rgba(240,192,64,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                  }}>
+                  <div style={{ fontSize: 13, color: visualAI.provider === key ? "#f0c040" : "#ccc", fontWeight: 600 }}>{p.name}</div>
+                  <div style={{ fontSize: 10, color: "#666", marginTop: 3 }}>{p.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>API 키</div>
+            <input type="password" style={inputStyle}
+              placeholder={VISUAL_AI_PROVIDERS[visualAI.provider].keyPlaceholder}
+              value={visualAI.apiKey}
+              onChange={(e) => setVisualAI((prev) => ({ ...prev, apiKey: e.target.value }))} />
+            <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>{VISUAL_AI_PROVIDERS[visualAI.provider].keyHelp}</div>
           </div>
 
           {/* TTS Settings */}
