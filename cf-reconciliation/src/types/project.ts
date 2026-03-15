@@ -20,6 +20,9 @@ export interface Account {
   closingBalance: number;
   change: number;
   columnIndex: number;
+  // 업로드 시 사전 분류 (템플릿에서 입력)
+  preBS?: BSCategory;
+  preCF?: CFCategory;
 }
 
 export interface CoAMapping {

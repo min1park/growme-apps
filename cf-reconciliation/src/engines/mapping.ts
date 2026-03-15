@@ -44,13 +44,25 @@ const MAPPING_RULES: MappingRule[] = [
 
 export function autoMap(accounts: Account[]): CoAMapping[] {
   return accounts.map(account => {
+    // 업로드 시 사전 분류가 있으면 우선 사용
+    if (account.preBS && account.preCF) {
+      const rule = MAPPING_RULES.find(r => r.pattern.test(account.name));
+      return {
+        accountId: account.id,
+        bsCategory: account.preBS,
+        cfCategory: account.preCF,
+        isLocked: rule?.locked ?? false,
+        isAutoMatched: true,
+      };
+    }
+
     const rule = MAPPING_RULES.find(r => r.pattern.test(account.name));
     return {
       accountId: account.id,
-      bsCategory: rule?.bs ?? 'current-asset',
-      cfCategory: rule?.cf ?? 'operating-asset',
+      bsCategory: account.preBS ?? rule?.bs ?? 'current-asset',
+      cfCategory: account.preCF ?? rule?.cf ?? 'operating-asset',
       isLocked: rule?.locked ?? false,
-      isAutoMatched: !!rule, // H-2 fix: 자동매핑 여부 표시 (미매핑 계정 식별용)
+      isAutoMatched: !!(account.preBS || account.preCF || rule),
     };
   });
 }

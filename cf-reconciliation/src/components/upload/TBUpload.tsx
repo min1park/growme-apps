@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Account } from '@/types';
+import { Account, BS_CATEGORY_LABELS, CF_CATEGORY_LABELS } from '@/types';
 import { parseFile, getSheetData, detectColumns, parseTB, validateTB, TBParseConfig, DetectedColumns } from '@/services/tb-parser';
 import { formatNumber } from '@/lib/format';
 import { UploadIcon, FileSpreadsheetIcon, DownloadIcon, CheckCircle2Icon, AlertCircleIcon } from 'lucide-react';
@@ -53,6 +53,8 @@ export function TBUpload({ onComplete }: TBUploadProps) {
         closing: detected.closing ?? (detected.format === '6col' ? 5 : 3),
         debit: detected.debit,
         credit: detected.credit,
+        bsCategory: detected.bsCategory,
+        cfCategory: detected.cfCategory,
       };
       const newConfig: TBParseConfig = {
         sheetName: name,
@@ -97,6 +99,8 @@ export function TBUpload({ onComplete }: TBUploadProps) {
   const validation = validateTB(preview);
   const totalOpening = validation.openingSum;
   const totalClosing = validation.closingSum;
+  const hasClassification = config.columns.bsCategory != null || config.columns.cfCategory != null;
+  const classifiedCount = preview.filter(a => a.preBS && a.preCF).length;
 
   const colOptions = data.length > 0
     ? (data[0] as unknown[]).map((cell, idx) => ({
@@ -153,6 +157,11 @@ export function TBUpload({ onComplete }: TBUploadProps) {
             {config.format === '6col' && (
               <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
                 6컬럼 형식 (전기이월/차변/대변/총합계)
+              </span>
+            )}
+            {(config.columns.bsCategory != null || config.columns.cfCategory != null) && (
+              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                BS/CF분류 포함
               </span>
             )}
             <Button variant="ghost" size="xs" onClick={() => { setWorkbook(null); setPreview([]); }}>변경</Button>
@@ -232,6 +241,8 @@ export function TBUpload({ onComplete }: TBUploadProps) {
                     <th className="px-2 py-1.5 text-right font-medium">기초</th>
                     <th className="px-2 py-1.5 text-right font-medium">기말</th>
                     <th className="px-2 py-1.5 text-right font-medium">증감</th>
+                    {hasClassification && <th className="px-2 py-1.5 text-center font-medium">BS분류</th>}
+                    {hasClassification && <th className="px-2 py-1.5 text-center font-medium">CF분류</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -245,17 +256,40 @@ export function TBUpload({ onComplete }: TBUploadProps) {
                       <td className={`px-2 py-1 text-right font-mono ${a.change < 0 ? 'text-red-600' : ''}`}>
                         {formatNumber(a.change)}
                       </td>
+                      {hasClassification && (
+                        <td className="px-2 py-1 text-center">
+                          {a.preBS ? (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-blue-50 text-blue-600 rounded">
+                              {BS_CATEGORY_LABELS[a.preBS]}
+                            </span>
+                          ) : <span className="text-muted-foreground">-</span>}
+                        </td>
+                      )}
+                      {hasClassification && (
+                        <td className="px-2 py-1 text-center">
+                          {a.preCF ? (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-green-50 text-green-600 rounded">
+                              {CF_CATEGORY_LABELS[a.preCF]}
+                            </span>
+                          ) : <span className="text-muted-foreground">-</span>}
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {preview.length > 30 && (
-                    <tr><td colSpan={6} className="text-center py-2 text-muted-foreground">... 외 {preview.length - 30}개</td></tr>
+                    <tr><td colSpan={hasClassification ? 8 : 6} className="text-center py-2 text-muted-foreground">... 외 {preview.length - 30}개</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            {hasClassification && classifiedCount > 0 ? (
+              <span className="text-xs text-green-600">
+                {classifiedCount}/{preview.length}개 계정 사전분류 완료
+              </span>
+            ) : <span />}
             <Button onClick={() => onComplete(preview)} disabled={preview.length === 0} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-sm">
               다음: 매핑 ({preview.length}개 계정)
             </Button>

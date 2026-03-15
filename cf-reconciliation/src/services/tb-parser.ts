@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Account } from '@/types';
+import { Account, BSCategory, CFCategory, BS_CATEGORY_LABELS, CF_CATEGORY_LABELS } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface TBParseConfig {
@@ -13,6 +13,9 @@ export interface TBParseConfig {
     // 6컬럼 형식 (전기이월/차변/대변/총합계)
     debit?: number;
     credit?: number;
+    // 분류 컬럼 (선택)
+    bsCategory?: number;
+    cfCategory?: number;
   };
   // 파일 형식: '4col' (기초/기말) 또는 '6col' (전기이월/차변/대변/총합계)
   format: '4col' | '6col';
@@ -74,6 +77,8 @@ export interface DetectedColumns {
   closing?: number;
   debit?: number;
   credit?: number;
+  bsCategory?: number;
+  cfCategory?: number;
   format: '4col' | '6col';
 }
 
@@ -107,6 +112,14 @@ export function detectColumns(headerRow: unknown[]): DetectedColumns {
     if (/총합계|합계$|기말|당기말|기말잔액/.test(s)) {
       result.closing = idx;
     }
+    // BS분류
+    if (/bs분류|bs구분|재무상태표분류|bs카테고리/.test(s)) {
+      result.bsCategory = idx;
+    }
+    // CF분류
+    if (/cf분류|cf구분|현금흐름분류|cf카테고리/.test(s)) {
+      result.cfCategory = idx;
+    }
   });
 
   // 차변/대변 컬럼이 있으면 6컬럼 형식
@@ -115,6 +128,32 @@ export function detectColumns(headerRow: unknown[]): DetectedColumns {
   }
 
   return result;
+}
+
+// 한글 라벨 → 내부 키 역매핑
+const BS_LABEL_TO_KEY = new Map<string, BSCategory>(
+  Object.entries(BS_CATEGORY_LABELS).map(([k, v]) => [v, k as BSCategory])
+);
+const CF_LABEL_TO_KEY = new Map<string, CFCategory>(
+  Object.entries(CF_CATEGORY_LABELS).map(([k, v]) => [v, k as CFCategory])
+);
+
+function parseBSCategory(val: unknown): BSCategory | undefined {
+  const s = String(val ?? '').trim();
+  if (!s) return undefined;
+  // 한글 라벨로 입력된 경우
+  if (BS_LABEL_TO_KEY.has(s)) return BS_LABEL_TO_KEY.get(s);
+  // 영문 키로 입력된 경우
+  if (Object.keys(BS_CATEGORY_LABELS).includes(s)) return s as BSCategory;
+  return undefined;
+}
+
+function parseCFCategory(val: unknown): CFCategory | undefined {
+  const s = String(val ?? '').trim();
+  if (!s) return undefined;
+  if (CF_LABEL_TO_KEY.has(s)) return CF_LABEL_TO_KEY.get(s);
+  if (Object.keys(CF_CATEGORY_LABELS).includes(s)) return s as CFCategory;
+  return undefined;
 }
 
 export function parseTB(data: unknown[][], config: TBParseConfig): Account[] {
@@ -135,15 +174,20 @@ export function parseTB(data: unknown[][], config: TBParseConfig): Account[] {
     let closing = 0;
 
     if (config.format === '6col') {
-      // 6컬럼 형식: 전기이월 + 차변 + 대변 = 총합계
-      // 전기이월 = 기초, 총합계 = 기말
       opening = Number(row[config.columns.opening]) || 0;
       closing = Number(row[config.columns.closing]) || 0;
     } else {
-      // 4컬럼 형식: 기초/기말
       opening = Number(row[config.columns.opening]) || 0;
       closing = Number(row[config.columns.closing]) || 0;
     }
+
+    // BS/CF 분류 (업로드 파일에 포함된 경우)
+    const preBS = config.columns.bsCategory != null
+      ? parseBSCategory(row[config.columns.bsCategory])
+      : undefined;
+    const preCF = config.columns.cfCategory != null
+      ? parseCFCategory(row[config.columns.cfCategory])
+      : undefined;
 
     accounts.push({
       id: uuidv4(),
@@ -153,6 +197,8 @@ export function parseTB(data: unknown[][], config: TBParseConfig): Account[] {
       closingBalance: closing,
       change: closing - opening,
       columnIndex: accounts.length,
+      preBS,
+      preCF,
     });
   }
 
