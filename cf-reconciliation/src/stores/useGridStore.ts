@@ -16,6 +16,7 @@ interface GridState {
   editingCell: CellKey | null;
   collapsedSections: Set<string>;
   showNonCash: boolean;
+  columnOrder: string[] | null; // 사용자 커스텀 열 순서 (null = 기본 정렬)
 
   undoStack: GridAction[];
   redoStack: GridAction[];
@@ -51,6 +52,9 @@ interface GridState {
 
   setReferenceData: (cfItemId: string, data: ReferenceData | null) => void;
 
+  setColumnOrder: (order: string[] | null) => void;
+  moveColumn: (fromId: string, toId: string) => void;
+
   toJSON: () => object;
   fromJSON: (data: unknown) => void;
 }
@@ -78,6 +82,7 @@ export const useGridStore = create<GridState>((set, get) => ({
   editingCell: null,
   collapsedSections: new Set(),
   showNonCash: true,
+  columnOrder: null,
 
   undoStack: [],
   redoStack: [],
@@ -293,6 +298,22 @@ export const useGridStore = create<GridState>((set, get) => ({
     get().revalidate();
   },
 
+  setColumnOrder: (order) => set({ columnOrder: order }),
+
+  moveColumn: (fromId, toId) => {
+    const state = get();
+    // 현재 순서 가져오기 (커스텀이 없으면 현재 accounts 순서 사용)
+    const currentOrder = state.columnOrder ?? state.accounts.map(a => a.id);
+    const newOrder = [...currentOrder];
+    const fromIdx = newOrder.indexOf(fromId);
+    const toIdx = newOrder.indexOf(toId);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+    // fromIdx 위치의 항목을 toIdx 위치로 이동
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+    set({ columnOrder: newOrder });
+  },
+
   setReferenceData: (cfItemId, data) => {
     const state = get();
     const newRefData = new Map(state.referenceData);
@@ -313,6 +334,7 @@ export const useGridStore = create<GridState>((set, get) => ({
       gridData: Array.from(state.gridData.entries()),
       referenceData: Array.from(state.referenceData.entries()),
       showNonCash: state.showNonCash,
+      columnOrder: state.columnOrder,
     };
   },
 
@@ -376,6 +398,7 @@ export const useGridStore = create<GridState>((set, get) => ({
       gridData: new Map(gridEntries),
       referenceData: new Map(refEntries),
       showNonCash: typeof d.showNonCash === 'boolean' ? d.showNonCash : true,
+      columnOrder: Array.isArray(d.columnOrder) ? d.columnOrder as string[] : null,
       undoStack: [],
       redoStack: [],
       selectedCell: null,

@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { Account, CoAMapping, CellKey, CellValue, ValidationResult, ReferenceData, makeCellKey } from '@/types';
 import { CFItem } from '@/types/cf-template';
 import { getSubtotalAmount } from '@/engines/validation';
+import { sortAccounts } from '@/lib/account-sort';
 
 /** 1-based column index → Excel column letter (1=A, 2=B, ..., 27=AA) */
 function colLetter(col: number): string {
@@ -257,10 +258,14 @@ export async function exportToExcel(
   };
 
   // 현금 계정과 손익 계정 제외 (정산 대상이 아님 — 손익은 당기순이익→이익잉여금 경로로 반영)
-  const gridAccounts = accounts.filter(a => {
-    const m = mappingMap.get(a.id);
-    return m?.cfCategory !== 'cash' && m?.bsCategory !== 'income-statement';
-  });
+  // BS분류 순서 + 계정코드 오름차순 정렬
+  const gridAccounts = sortAccounts(
+    accounts.filter(a => {
+      const m = mappingMap.get(a.id);
+      return m?.cfCategory !== 'cash' && m?.bsCategory !== 'income-statement';
+    }),
+    mappingMap,
+  );
 
   // 레이아웃 상수 (A=검증, B=참조금액, C=출처, D=CF항목, E=CF금액, F+계정과목)
   const ACCT_COL_START = 6; // F열부터 계정과목 (1-based)

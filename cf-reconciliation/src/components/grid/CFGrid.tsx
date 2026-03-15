@@ -8,10 +8,11 @@ import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { GridCell } from './GridCell';
 import { Button } from '@/components/ui/button';
-import { DownloadIcon, PlusIcon, XIcon } from 'lucide-react';
+import { ArrowUpDownIcon, DownloadIcon, PlusIcon, XIcon } from 'lucide-react';
 import { exportToExcel } from '@/services/excel-exporter';
 import { CFItem } from '@/types/cf-template';
 import { getSubtotalAmount } from '@/engines/validation';
+import { sortAccounts } from '@/lib/account-sort';
 
 import { useState } from 'react';
 
@@ -135,14 +136,17 @@ function RefAmountCell({
 export function CFGrid() {
   const {
     accounts, cfItems, mappings, gridData, referenceData, validation,
-    selectedCell, editingCell, showNonCash, collapsedSections,
+    selectedCell, editingCell, showNonCash, collapsedSections, columnOrder,
     selectCell, startEditing, stopEditing, setCellValue,
     setShowNonCash, toggleSection, undo, redo,
     addItemToSection, removeItemFromSection, setReferenceData,
+    moveColumn, setColumnOrder,
   } = useGridStore();
 
   const [addingTo, setAddingTo] = useState<string | null>(null); // parentId for add input
   const [newItemLabel, setNewItemLabel] = useState('');
+  const [dragColId, setDragColId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -167,15 +171,15 @@ export function CFGrid() {
     });
   }, [cfItems, showNonCash, collapsedSections]);
 
-  // Filter accounts (exclude cash and income-statement for grid body)
+  // Filter accounts (exclude cash and income-statement for grid body), then sort
   const mappingMap = useMemo(() => new Map(mappings.map(m => [m.accountId, m])), [mappings]);
-  const gridAccounts = useMemo(() =>
-    accounts.filter(a => {
+  const gridAccounts = useMemo(() => {
+    const filtered = accounts.filter(a => {
       const m = mappingMap.get(a.id);
       return m?.cfCategory !== 'cash' && m?.bsCategory !== 'income-statement';
-    }),
-    [accounts, mappingMap]
-  );
+    });
+    return sortAccounts(filtered, mappingMap, columnOrder);
+  }, [accounts, mappingMap, columnOrder]);
 
   // Virtual scrollers
   const rowVirtualizer = useVirtualizer({
@@ -277,6 +281,12 @@ export function CFGrid() {
           </span>
         )}
         <div className="flex-1" />
+        {columnOrder && (
+          <Button variant="outline" size="xs" onClick={() => setColumnOrder(null)}>
+            <ArrowUpDownIcon className="h-3 w-3 mr-1" />
+            기본정렬
+          </Button>
+        )}
         <Button variant="outline" size="xs" onClick={handleExport}>
           <DownloadIcon className="h-3 w-3 mr-1" />
           Excel
@@ -378,11 +388,43 @@ export function CFGrid() {
                 const mapping = mappingMap.get(account.id);
                 const isAsset = mapping?.bsCategory === 'current-asset' || mapping?.bsCategory === 'noncurrent-asset';
                 const adjustedChange = isAsset ? account.change : -account.change;
+                const isDragOver = dragOverColId === account.id && dragColId !== account.id;
                 return (
                   <div
                     key={account.id}
-                    className="absolute top-0 border-r flex flex-col justify-end"
+                    className={cn(
+                      'absolute top-0 border-r flex flex-col justify-end cursor-grab active:cursor-grabbing',
+                      isDragOver && 'bg-blue-100/70 border-l-2 border-l-blue-400',
+                      dragColId === account.id && 'opacity-40',
+                    )}
                     style={{ left: idx * CELL_WIDTH, width: CELL_WIDTH, height: HEADER_HEIGHT }}
+                    draggable
+                    onDragStart={(e) => {
+                      setDragColId(account.id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', account.id);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      setDragOverColId(account.id);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverColId === account.id) setDragOverColId(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData('text/plain');
+                      if (fromId && fromId !== account.id) {
+                        moveColumn(fromId, account.id);
+                      }
+                      setDragColId(null);
+                      setDragOverColId(null);
+                    }}
+                    onDragEnd={() => {
+                      setDragColId(null);
+                      setDragOverColId(null);
+                    }}
                   >
                     <div className="px-1 text-[10px] text-muted-foreground truncate">{account.code}</div>
                     <div className="px-1 text-[10px] font-medium truncate" title={account.name}>{account.name}</div>
