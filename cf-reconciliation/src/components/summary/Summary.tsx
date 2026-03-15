@@ -13,7 +13,7 @@ import { getSubtotalAmount } from '@/engines/validation';
 import { DownloadIcon, FileJsonIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react';
 
 export function Summary() {
-  const { accounts, cfItems, gridData, validation, toJSON } = useGridStore();
+  const { accounts, cfItems, mappings, gridData, validation, toJSON } = useGridStore();
   const { currentProject } = useProjectStore();
 
   const handleExcelExport = useCallback(async () => {
@@ -23,6 +23,7 @@ export function Summary() {
       cfItems,
       gridData,
       validation,
+      mappings,
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -30,7 +31,7 @@ export function Summary() {
     a.download = `${currentProject?.name ?? 'CF정산표'}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [accounts, cfItems, gridData, validation, currentProject]);
+  }, [accounts, cfItems, gridData, validation, mappings, currentProject]);
 
   const handleJSONExport = useCallback(() => {
     const data = toJSON();
@@ -46,19 +47,17 @@ export function Summary() {
   const colOk = validation.passedColumns === validation.totalColumns && validation.totalColumns > 0;
   const cashOk = Math.abs(validation.cashCheck) < 0.5;
 
-  // Build CF statement preview (C-1 fix: sign 적용)
+  // CF금액 = 입력값 합계 (sign 미적용, 예시 Excel과 동일)
   const cfPreview = cfItems.filter(i => i.sectionId !== 'noncash').map(item => {
     let amount = 0;
     if (item.isSubtotal) {
       amount = getSubtotalAmount(item.id, cfItems, accounts, gridData);
     } else {
-      let rawSum = 0;
       for (const account of accounts) {
         const key = makeCellKey(item.id, account.id);
         const cell = gridData.get(key);
-        if (cell) rawSum += cell.amount;
+        if (cell) amount += cell.amount;
       }
-      amount = rawSum * item.sign;
     }
     return { ...item, amount };
   });

@@ -69,38 +69,41 @@ const operatingItems: CFItem[] = [
 
 const investingItems: CFItem[] = [
   { id: 'inv', parentId: null, sectionId: 'investing', label: 'II. 투자활동으로 인한 현금흐름', level: 0, isSubtotal: true, isEditable: false, order: 0, sign: 1 },
-  // 투자활동: 모든 항목이 자산 원천 → sign = -1
-  { id: 'inv-deposit-dec', parentId: 'inv', sectionId: 'investing', label: '정기예금의 감소', level: 1, isSubtotal: false, isEditable: true, order: 1, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-deposit-inc', parentId: 'inv', sectionId: 'investing', label: '정기예금의 증가', level: 1, isSubtotal: false, isEditable: true, order: 2, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-financial-dec', parentId: 'inv', sectionId: 'investing', label: '단기금융상품의 감소', level: 1, isSubtotal: false, isEditable: true, order: 3, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-financial-inc', parentId: 'inv', sectionId: 'investing', label: '단기금융상품의 증가', level: 1, isSubtotal: false, isEditable: true, order: 4, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-loan-dec', parentId: 'inv', sectionId: 'investing', label: '대여금의 감소', level: 1, isSubtotal: false, isEditable: true, order: 5, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-loan-inc', parentId: 'inv', sectionId: 'investing', label: '대여금의 증가', level: 1, isSubtotal: false, isEditable: true, order: 6, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-guarantee-dec', parentId: 'inv', sectionId: 'investing', label: '보증금의 감소', level: 1, isSubtotal: false, isEditable: true, order: 7, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-guarantee-inc', parentId: 'inv', sectionId: 'investing', label: '보증금의 증가', level: 1, isSubtotal: false, isEditable: true, order: 8, sign: -1, defaultCfCategories: ['investing-financial'] },
-  { id: 'inv-ppe-dispose', parentId: 'inv', sectionId: 'investing', label: '유형자산의 처분', level: 1, isSubtotal: false, isEditable: true, order: 9, sign: -1, defaultCfCategories: ['investing-ppe'] },
-  { id: 'inv-ppe-acquire', parentId: 'inv', sectionId: 'investing', label: '유형자산의 취득', level: 1, isSubtotal: false, isEditable: true, order: 10, sign: -1, defaultCfCategories: ['investing-ppe'] },
-  { id: 'inv-intang-dispose', parentId: 'inv', sectionId: 'investing', label: '무형자산의 처분', level: 1, isSubtotal: false, isEditable: true, order: 11, sign: -1, defaultCfCategories: ['investing-intangible'] },
-  { id: 'inv-intang-acquire', parentId: 'inv', sectionId: 'investing', label: '무형자산의 취득', level: 1, isSubtotal: false, isEditable: true, order: 12, sign: -1, defaultCfCategories: ['investing-intangible'] },
-  { id: 'inv-invest-prop', parentId: 'inv', sectionId: 'investing', label: '투자부동산의 취득', level: 1, isSubtotal: false, isEditable: true, order: 13, sign: -1, defaultCfCategories: ['investing-other'] },
-  { id: 'inv-subsidiary', parentId: 'inv', sectionId: 'investing', label: '종속기업투자의 취득', level: 1, isSubtotal: false, isEditable: true, order: 14, sign: -1, defaultCfCategories: ['investing-other'] },
+  // (1) 투자활동으로 인한 현금유입액
+  { id: 'inv-in', parentId: 'inv', sectionId: 'investing', label: '(1) 투자활동으로 인한 현금유입액', level: 1, isSubtotal: true, isEditable: false, order: 1, sign: 1 },
+  { id: 'inv-deposit-dec', parentId: 'inv-in', sectionId: 'investing', label: '정기예금의 감소', level: 2, isSubtotal: false, isEditable: true, order: 2, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-financial-dec', parentId: 'inv-in', sectionId: 'investing', label: '단기금융상품의 감소', level: 2, isSubtotal: false, isEditable: true, order: 3, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-loan-dec', parentId: 'inv-in', sectionId: 'investing', label: '대여금의 감소', level: 2, isSubtotal: false, isEditable: true, order: 4, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-guarantee-dec', parentId: 'inv-in', sectionId: 'investing', label: '보증금의 감소', level: 2, isSubtotal: false, isEditable: true, order: 5, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-ppe-dispose', parentId: 'inv-in', sectionId: 'investing', label: '유형자산의 처분', level: 2, isSubtotal: false, isEditable: true, order: 6, sign: -1, defaultCfCategories: ['investing-ppe'] },
+  { id: 'inv-intang-dispose', parentId: 'inv-in', sectionId: 'investing', label: '무형자산의 처분', level: 2, isSubtotal: false, isEditable: true, order: 7, sign: -1, defaultCfCategories: ['investing-intangible'] },
+  // (2) 투자활동으로 인한 현금유출액
+  { id: 'inv-out', parentId: 'inv', sectionId: 'investing', label: '(2) 투자활동으로 인한 현금유출액', level: 1, isSubtotal: true, isEditable: false, order: 20, sign: 1 },
+  { id: 'inv-deposit-inc', parentId: 'inv-out', sectionId: 'investing', label: '정기예금의 증가', level: 2, isSubtotal: false, isEditable: true, order: 21, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-financial-inc', parentId: 'inv-out', sectionId: 'investing', label: '단기금융상품의 증가', level: 2, isSubtotal: false, isEditable: true, order: 22, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-loan-inc', parentId: 'inv-out', sectionId: 'investing', label: '대여금의 증가', level: 2, isSubtotal: false, isEditable: true, order: 23, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-guarantee-inc', parentId: 'inv-out', sectionId: 'investing', label: '보증금의 증가', level: 2, isSubtotal: false, isEditable: true, order: 24, sign: -1, defaultCfCategories: ['investing-financial'] },
+  { id: 'inv-ppe-acquire', parentId: 'inv-out', sectionId: 'investing', label: '유형자산의 취득', level: 2, isSubtotal: false, isEditable: true, order: 25, sign: -1, defaultCfCategories: ['investing-ppe'] },
+  { id: 'inv-intang-acquire', parentId: 'inv-out', sectionId: 'investing', label: '무형자산의 취득', level: 2, isSubtotal: false, isEditable: true, order: 26, sign: -1, defaultCfCategories: ['investing-intangible'] },
+  { id: 'inv-invest-prop', parentId: 'inv-out', sectionId: 'investing', label: '투자부동산의 취득', level: 2, isSubtotal: false, isEditable: true, order: 27, sign: -1, defaultCfCategories: ['investing-other'] },
+  { id: 'inv-subsidiary', parentId: 'inv-out', sectionId: 'investing', label: '종속기업투자의 취득', level: 2, isSubtotal: false, isEditable: true, order: 28, sign: -1, defaultCfCategories: ['investing-other'] },
 ];
 
 const financingItems: CFItem[] = [
   { id: 'fin', parentId: null, sectionId: 'financing', label: 'III. 재무활동으로 인한 현금흐름', level: 0, isSubtotal: true, isEditable: false, order: 0, sign: 1 },
-  // 재무활동-부채 원천: sign = 1
-  { id: 'fin-borrow-inc', parentId: 'fin', sectionId: 'financing', label: '단기차입금의 증가', level: 1, isSubtotal: false, isEditable: true, order: 1, sign: 1, defaultCfCategories: ['financing'] },
-  { id: 'fin-borrow-dec', parentId: 'fin', sectionId: 'financing', label: '단기차입금의 상환', level: 1, isSubtotal: false, isEditable: true, order: 2, sign: 1, defaultCfCategories: ['financing'] },
-  { id: 'fin-long-borrow-inc', parentId: 'fin', sectionId: 'financing', label: '장기차입금의 차입', level: 1, isSubtotal: false, isEditable: true, order: 3, sign: 1, defaultCfCategories: ['financing'] },
-  { id: 'fin-long-borrow-dec', parentId: 'fin', sectionId: 'financing', label: '장기차입금의 상환', level: 1, isSubtotal: false, isEditable: true, order: 4, sign: 1, defaultCfCategories: ['financing'] },
-  { id: 'fin-lease-repay', parentId: 'fin', sectionId: 'financing', label: '리스부채의 상환', level: 1, isSubtotal: false, isEditable: true, order: 5, sign: 1, defaultCfCategories: ['financing'] },
-  // 자기주식: contra-equity (차변성) → sign = -1
-  { id: 'fin-treasury', parentId: 'fin', sectionId: 'financing', label: '자기주식의 취득', level: 1, isSubtotal: false, isEditable: true, order: 6, sign: -1 },
-  // 배당금지급: 자본(이익잉여금) 원천 → sign = 1
-  { id: 'fin-dividend-paid', parentId: 'fin', sectionId: 'financing', label: '배당금의 지급', level: 1, isSubtotal: false, isEditable: true, order: 7, sign: 1 },
-  // 임대보증금: 부채 원천 → sign = 1
-  { id: 'fin-deposit-inc', parentId: 'fin', sectionId: 'financing', label: '임대보증금의 증가', level: 1, isSubtotal: false, isEditable: true, order: 8, sign: 1, defaultCfCategories: ['financing'] },
-  { id: 'fin-deposit-dec', parentId: 'fin', sectionId: 'financing', label: '임대보증금의 감소', level: 1, isSubtotal: false, isEditable: true, order: 9, sign: 1, defaultCfCategories: ['financing'] },
+  // (1) 재무활동으로 인한 현금유입액
+  { id: 'fin-in', parentId: 'fin', sectionId: 'financing', label: '(1) 재무활동으로 인한 현금유입액', level: 1, isSubtotal: true, isEditable: false, order: 1, sign: 1 },
+  { id: 'fin-borrow-inc', parentId: 'fin-in', sectionId: 'financing', label: '단기차입금의 증가', level: 2, isSubtotal: false, isEditable: true, order: 2, sign: 1, defaultCfCategories: ['financing'] },
+  { id: 'fin-long-borrow-inc', parentId: 'fin-in', sectionId: 'financing', label: '장기차입금의 차입', level: 2, isSubtotal: false, isEditable: true, order: 3, sign: 1, defaultCfCategories: ['financing'] },
+  { id: 'fin-deposit-inc', parentId: 'fin-in', sectionId: 'financing', label: '임대보증금의 증가', level: 2, isSubtotal: false, isEditable: true, order: 4, sign: 1, defaultCfCategories: ['financing'] },
+  // (2) 재무활동으로 인한 현금유출액
+  { id: 'fin-out', parentId: 'fin', sectionId: 'financing', label: '(2) 재무활동으로 인한 현금유출액', level: 1, isSubtotal: true, isEditable: false, order: 20, sign: 1 },
+  { id: 'fin-borrow-dec', parentId: 'fin-out', sectionId: 'financing', label: '단기차입금의 상환', level: 2, isSubtotal: false, isEditable: true, order: 21, sign: 1, defaultCfCategories: ['financing'] },
+  { id: 'fin-long-borrow-dec', parentId: 'fin-out', sectionId: 'financing', label: '장기차입금의 상환', level: 2, isSubtotal: false, isEditable: true, order: 22, sign: 1, defaultCfCategories: ['financing'] },
+  { id: 'fin-lease-repay', parentId: 'fin-out', sectionId: 'financing', label: '리스부채의 상환', level: 2, isSubtotal: false, isEditable: true, order: 23, sign: 1, defaultCfCategories: ['financing'] },
+  { id: 'fin-treasury', parentId: 'fin-out', sectionId: 'financing', label: '자기주식의 취득', level: 2, isSubtotal: false, isEditable: true, order: 24, sign: -1 },
+  { id: 'fin-dividend-paid', parentId: 'fin-out', sectionId: 'financing', label: '배당금의 지급', level: 2, isSubtotal: false, isEditable: true, order: 25, sign: 1 },
+  { id: 'fin-deposit-dec', parentId: 'fin-out', sectionId: 'financing', label: '임대보증금의 감소', level: 2, isSubtotal: false, isEditable: true, order: 26, sign: 1, defaultCfCategories: ['financing'] },
 ];
 
 const cashSummaryItems: CFItem[] = [

@@ -1,7 +1,19 @@
 import ExcelJS from 'exceljs';
-import { Account, CellKey, CellValue, ValidationResult, makeCellKey } from '@/types';
+import { Account, CoAMapping, CellKey, CellValue, ValidationResult, ReferenceData, makeCellKey } from '@/types';
 import { CFItem } from '@/types/cf-template';
 import { getSubtotalAmount } from '@/engines/validation';
+
+/** 1-based column index → Excel column letter (1=A, 2=B, ..., 27=AA) */
+function colLetter(col: number): string {
+  let letter = '';
+  let c = col;
+  while (c > 0) {
+    const mod = (c - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    c = Math.floor((c - 1) / 26);
+  }
+  return letter;
+}
 
 /**
  * 시산표 입력 템플릿 생성
@@ -163,86 +175,201 @@ export async function exportToExcel(
   cfItems: CFItem[],
   gridData: Map<CellKey, CellValue>,
   validation: ValidationResult,
+  mappings: CoAMapping[],
+  referenceData?: Map<string, ReferenceData>,
 ): Promise<Blob> {
   const workbook = new ExcelJS.Workbook();
+  const sheetName = `CF정산표_${projectName}`;
+  const ws = workbook.addWorksheet(sheetName);
 
-  const ws = workbook.addWorksheet(`CF정산표_${projectName}`);
+  const mappingMap = new Map(mappings.map(m => [m.accountId, m]));
 
-  const headerRow = ['검증', 'CF항목', 'CF금액', ...accounts.map(a => a.name)];
-  ws.addRow(headerRow);
+  // 자산 계정 여부 판별 (자산: 증감=기말-기초, 부채/자본: 증감=-(기말-기초))
+  const isAssetAccount = (accountId: string): boolean => {
+    const bs = mappingMap.get(accountId)?.bsCategory;
+    return bs === 'current-asset' || bs === 'noncurrent-asset';
+  };
 
-  ws.addRow(['', '당기초', '', ...accounts.map(a => a.openingBalance)]);
-  ws.addRow(['', '당기말', '', ...accounts.map(a => a.closingBalance)]);
-  ws.addRow(['', '증감', '', ...accounts.map(a => a.change)]);
+  // 현금 계정 제외 (정산 대상이 아님)
+  const gridAccounts = accounts.filter(a => mappingMap.get(a.id)?.cfCategory !== 'cash');
 
-  const valRow = ['', '열검증', '', ...accounts.map(a => validation.columnChecks.get(a.id) ?? 0)];
-  ws.addRow(valRow);
+  // 레이아웃 상수 (A=검증, B=참조금액, C=출처, D=CF항목, E=CF금액, F+계정과목)
+  const ACCT_COL_START = 6; // F열부터 계정과목 (1-based)
+  const CF_ROW_START = 6;   // 6행부터 CF항목
+  const SUM_ROW = CF_ROW_START + cfItems.length; // CF항목 다음 행 = 합계
 
-  for (const item of cfItems) {
+  // ── Row 1: 헤더 ──
+  const r1 = ws.addRow(['검증', '참조금액', '출처', 'CF항목', 'CF금액', ...gridAccounts.map(a => a.name)]);
+  r1.font = { bold: true };
+  r1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+  r1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  r1.alignment = { horizontal: 'center' };
+
+  // ── Row 2: 검증 (증감 + SUM(CF항목) = 0이면 배분 완료) ──
+  const r2 = ws.addRow(['', '', '', '검증', '']);
+  for (let i = 0; i < gridAccounts.length; i++) {
+    const c = colLetter(ACCT_COL_START + i);
+    r2.getCell(ACCT_COL_START + i).value = { formula: `${c}5+${c}${SUM_ROW}` } as ExcelJS.CellFormulaValue;
+  }
+
+  // ── Row 3: 전기말 (기초잔액) ──
+  ws.addRow(['', '', '', '전기말', '', ...gridAccounts.map(a => a.openingBalance)]);
+
+  // ── Row 4: 당기말 (기말잔액) ──
+  ws.addRow(['', '', '', '당기말', '', ...gridAccounts.map(a => a.closingBalance)]);
+
+  // ── Row 5: 증감 (자산: 기말-기초, 부채/자본: -(기말-기초)) ──
+  const r5 = ws.addRow(['', '', '', '증감', '']);
+  for (let i = 0; i < gridAccounts.length; i++) {
+    const c = colLetter(ACCT_COL_START + i);
+    const formula = isAssetAccount(gridAccounts[i].id)
+      ? `${c}4-${c}3`       // 자산: 기말-기초
+      : `-(${c}4-${c}3)`;   // 부채/자본: -(기말-기초)
+    r5.getCell(ACCT_COL_START + i).value = { formula } as ExcelJS.CellFormulaValue;
+  }
+  r5.font = { bold: true };
+
+  // ── Pre-compute: CF항목 → Excel 행번호 매핑 ──
+  const itemRowMap = new Map<string, number>();
+  for (let idx = 0; idx < cfItems.length; idx++) {
+    itemRowMap.set(cfItems[idx].id, CF_ROW_START + idx);
+  }
+
+  // ── Rows 6+: CF항목 ──
+  for (let idx = 0; idx < cfItems.length; idx++) {
+    const item = cfItems[idx];
+    const rowNum = CF_ROW_START + idx;
     const indent = '  '.repeat(item.level);
-    let cfAmount = 0;
-    if (item.isSubtotal) {
-      cfAmount = getSubtotalAmount(item.id, cfItems, accounts, gridData);
-    } else {
-      let rawSum = 0;
-      for (const account of accounts) {
-        const key = makeCellKey(item.id, account.id);
-        const cell = gridData.get(key);
-        if (cell) rawSum += cell.amount;
-      }
-      cfAmount = rawSum * item.sign; // C-1 fix: sign convention 적용
-    }
 
-    const rowData: (string | number)[] = [
-      '',
-      `${indent}${item.label}`,
-      cfAmount,
-    ];
+    // 참조 데이터
+    const ref = referenceData?.get(item.id);
 
-    for (const account of accounts) {
+    // 기본 행 데이터 (A=검증, B=참조금액, C=출처, D=CF항목, E=CF금액 placeholder)
+    const rowData: (string | number)[] = ['', ref?.amount ?? '', ref?.source ?? '', `${indent}${item.label}`, 0];
+
+    // F열~: 계정과목별 셀 값 (사용자가 CF방향으로 입력한 값 그대로)
+    for (let i = 0; i < gridAccounts.length; i++) {
+      const account = gridAccounts[i];
       const key = makeCellKey(item.id, account.id);
       const cell = gridData.get(key);
-      rowData.push(cell?.amount ?? '');
+      if (cell && cell.amount !== 0) {
+        rowData.push(cell.amount);
+      } else {
+        rowData.push('');
+      }
     }
 
     const row = ws.addRow(rowData);
 
+    // CF금액 수식 (E열 = 5)
+    if (item.isEditable && gridAccounts.length > 0) {
+      const firstCol = colLetter(ACCT_COL_START);
+      const lastCol = colLetter(ACCT_COL_START + gridAccounts.length - 1);
+      row.getCell(5).value = { formula: `SUM(${firstCol}${rowNum}:${lastCol}${rowNum})` } as ExcelJS.CellFormulaValue;
+    } else if (item.isSubtotal) {
+      const children = cfItems.filter(i => i.parentId === item.id);
+      if (children.length > 0) {
+        const childRefs = children.map(c => `E${itemRowMap.get(c.id)}`).join(',');
+        row.getCell(5).value = { formula: `SUM(${childRefs})` } as ExcelJS.CellFormulaValue;
+      }
+    }
+
+    // A열: 검증 수식
+    if (item.isEditable && ref) {
+      // 참조금액 교차검증: 참조 ± CF = 0
+      if (ref.verifySign === 'plus') {
+        row.getCell(1).value = { formula: `B${rowNum}+E${rowNum}` } as ExcelJS.CellFormulaValue;
+      } else {
+        row.getCell(1).value = { formula: `B${rowNum}-E${rowNum}` } as ExcelJS.CellFormulaValue;
+      }
+    }
+    if (item.isEditable && item.sectionId === 'noncash') {
+      // 비현금 거래: 행 SUM = 0 검증
+      const firstCol = colLetter(ACCT_COL_START);
+      const lastCol = colLetter(ACCT_COL_START + gridAccounts.length - 1);
+      row.getCell(1).value = { formula: `SUM(${firstCol}${rowNum}:${lastCol}${rowNum})` } as ExcelJS.CellFormulaValue;
+    }
+
+    // 서식
     if (item.isSubtotal) {
       row.font = { bold: true };
       row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
     }
+    if (item.level === 0) {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+      row.font = { bold: true };
+    }
   }
 
-  ws.columns.forEach((col, idx) => {
-    if (idx >= 2) {
-      col.numFmt = '#,##0;(#,##0);"-"';
-      col.width = 15;
-    } else {
-      col.width = idx === 1 ? 35 : 10;
-    }
-  });
+  // ── SUM 행: 각 계정과목별 CF항목 합계 ──
+  const sumRow = ws.addRow(['', '', '', '합계', '']);
+  for (let i = 0; i < gridAccounts.length; i++) {
+    const c = colLetter(ACCT_COL_START + i);
+    sumRow.getCell(ACCT_COL_START + i).value = {
+      formula: `SUM(${c}${CF_ROW_START}:${c}${SUM_ROW - 1})`
+    } as ExcelJS.CellFormulaValue;
+  }
+  sumRow.font = { bold: true };
+  sumRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
 
+  // ── 검증 행 조건부 서식 (Row 2) ──
+  for (let i = 0; i < gridAccounts.length; i++) {
+    const cell = r2.getCell(ACCT_COL_START + i);
+    cell.numFmt = '#,##0;(#,##0);"-"';
+  }
+
+  // ── 열 서식 ──
+  ws.getColumn(1).width = 12;  // A: 검증
+  ws.getColumn(1).numFmt = '#,##0;(#,##0);"-"';
+  ws.getColumn(2).width = 15;  // B: 참조금액
+  ws.getColumn(2).numFmt = '#,##0;(#,##0);"-"';
+  ws.getColumn(3).width = 15;  // C: 출처
+  ws.getColumn(4).width = 35;  // D: CF항목
+  ws.getColumn(5).width = 18;  // E: CF금액
+  ws.getColumn(5).numFmt = '#,##0;(#,##0);"-"';
+
+  for (let i = 0; i < gridAccounts.length; i++) {
+    const col = ws.getColumn(ACCT_COL_START + i);
+    col.width = 15;
+    col.numFmt = '#,##0;(#,##0);"-"';
+  }
+
+  // ── 테두리 ──
+  const totalRows = ws.rowCount;
+  const totalCols = ACCT_COL_START + gridAccounts.length - 1;
+  for (let r = 1; r <= totalRows; r++) {
+    for (let c = 1; c <= totalCols; c++) {
+      ws.getCell(r, c).border = {
+        top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+        left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+        bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+        right: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      };
+    }
+  }
+
+  // ── 행 고정 (헤더 5행, 열 5개 고정) ──
+  ws.views = [{ state: 'frozen', xSplit: 5, ySplit: 5 }];
+
+  // ══════════════════════════════════════════════════
+  // Sheet 2: 현금흐름표 (Sheet 1 참조)
+  // ══════════════════════════════════════════════════
   const cfSheet = workbook.addWorksheet('현금흐름표');
-  cfSheet.addRow([`현금흐름표 - ${projectName}`]);
+  const titleRow = cfSheet.addRow([`현금흐름표 - ${projectName}`]);
+  titleRow.font = { bold: true, size: 14 };
   cfSheet.addRow([]);
 
   for (const item of cfItems) {
     if (item.sectionId === 'noncash') continue;
     const indent = '  '.repeat(item.level);
-    let cfAmount = 0;
-    if (item.isSubtotal) {
-      cfAmount = getSubtotalAmount(item.id, cfItems, accounts, gridData);
-    } else {
-      let rawSum = 0;
-      for (const account of accounts) {
-        const key = makeCellKey(item.id, account.id);
-        const cell = gridData.get(key);
-        if (cell) rawSum += cell.amount;
-      }
-      cfAmount = rawSum * item.sign; // C-1 fix: sign convention 적용
-    }
+    const itemRow = itemRowMap.get(item.id);
 
-    const row = cfSheet.addRow([`${indent}${item.label}`, cfAmount]);
+    const row = cfSheet.addRow([`${indent}${item.label}`, 0]);
+    // Sheet 1의 CF금액(E열) 참조
+    row.getCell(2).value = {
+      formula: `'${sheetName}'!E${itemRow}`
+    } as ExcelJS.CellFormulaValue;
+
     if (item.isSubtotal || item.level === 0) {
       row.font = { bold: true };
     }

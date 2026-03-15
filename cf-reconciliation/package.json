@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "node -r ./exfat-patch.cjs node_modules/next/dist/bin/next dev",
-    "build": "node -r ./exfat-patch.cjs node_modules/next/dist/bin/next build",
+    "build": "node build.cjs",
+    "deploy": "node build.cjs && node deploy.cjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",

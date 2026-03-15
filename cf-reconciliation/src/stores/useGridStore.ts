@@ -1,14 +1,15 @@
 import { create } from 'zustand';
-import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey, GridAction } from '@/types';
+import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey, GridAction, ReferenceData } from '@/types';
 import { CFItem } from '@/types/cf-template';
 import { KIFRS_CF_TEMPLATE, getAllCFItems } from '@/data/cf-template-kifrs';
-import { validateGrid, getSubtotalAmount, getRawSubtotalAmount } from '@/engines/validation';
+import { validateGrid, getSubtotalAmount } from '@/engines/validation';
 
 interface GridState {
   accounts: Account[];
   cfItems: CFItem[];
   mappings: CoAMapping[];
   gridData: Map<CellKey, CellValue>;
+  referenceData: Map<string, ReferenceData>; // cfItemId → 참조금액
   validation: ValidationResult;
 
   selectedCell: CellKey | null;
@@ -43,6 +44,12 @@ interface GridState {
 
   addCFItem: (item: CFItem, afterItemId?: string) => void;
   removeCFItem: (itemId: string) => void;
+  addNonCashItem: (label: string) => void;
+  removeNonCashItem: (itemId: string) => void;
+  addItemToSection: (parentId: string, label: string) => void;
+  removeItemFromSection: (itemId: string) => void;
+
+  setReferenceData: (cfItemId: string, data: ReferenceData | null) => void;
 
   toJSON: () => object;
   fromJSON: (data: unknown) => void;
@@ -51,6 +58,7 @@ interface GridState {
 const emptyValidation: ValidationResult = {
   columnChecks: new Map(),
   rowChecks: new Map(),
+  noncashChecks: new Map(),
   cashCheck: 0,
   passedColumns: 0,
   totalColumns: 0,
@@ -63,6 +71,7 @@ export const useGridStore = create<GridState>((set, get) => ({
   cfItems: getAllCFItems(KIFRS_CF_TEMPLATE),
   mappings: [],
   gridData: new Map(),
+  referenceData: new Map(),
   validation: emptyValidation,
 
   selectedCell: null,
@@ -133,15 +142,13 @@ export const useGridStore = create<GridState>((set, get) => ({
 
   getCFAmount: (cfItemId) => {
     const state = get();
-    const item = state.cfItems.find(i => i.id === cfItemId);
-    const sign = item?.sign ?? 1;
     let sum = 0;
     for (const account of state.accounts) {
       const key = makeCellKey(cfItemId, account.id);
       const cell = state.gridData.get(key);
       if (cell) sum += cell.amount;
     }
-    return sum * sign; // C-1 fix: sign 적용
+    return sum; // 입력값 합계 그대로 (sign 미적용, 예시 Excel과 동일)
   },
 
   getSubtotal: (subtotalId) => {
@@ -151,7 +158,7 @@ export const useGridStore = create<GridState>((set, get) => ({
 
   getRawSubtotal: (subtotalId) => {
     const state = get();
-    return getRawSubtotalAmount(subtotalId, state.cfItems, state.accounts, state.gridData);
+    return getSubtotalAmount(subtotalId, state.cfItems, state.accounts, state.gridData);
   },
 
   undo: () => {
@@ -219,6 +226,84 @@ export const useGridStore = create<GridState>((set, get) => ({
     set({ cfItems: state.cfItems.filter(i => i.id !== itemId) });
   },
 
+  addNonCashItem: (label) => {
+    const state = get();
+    const ncItems = state.cfItems.filter(i => i.sectionId === 'noncash' && i.isEditable);
+    const lastNc = ncItems.length > 0 ? ncItems[ncItems.length - 1] : null;
+    const newItem: CFItem = {
+      id: `nc-custom-${Date.now()}`,
+      parentId: 'nc',
+      sectionId: 'noncash',
+      label,
+      level: 1,
+      isSubtotal: false,
+      isEditable: true,
+      order: (lastNc?.order ?? 0) + 1,
+      sign: 1,
+    };
+    get().addCFItem(newItem, lastNc?.id);
+    get().revalidate();
+  },
+
+  removeNonCashItem: (itemId) => {
+    get().removeItemFromSection(itemId);
+  },
+
+  addItemToSection: (parentId, label) => {
+    const state = get();
+    const parent = state.cfItems.find(i => i.id === parentId);
+    if (!parent) return;
+
+    const siblings = state.cfItems.filter(i => i.parentId === parentId && i.isEditable);
+    const lastSibling = siblings.length > 0 ? siblings[siblings.length - 1] : null;
+
+    const newItem: CFItem = {
+      id: `${parentId}-custom-${Date.now()}`,
+      parentId,
+      sectionId: parent.sectionId,
+      label,
+      level: parent.level + 1,
+      isSubtotal: false,
+      isEditable: true,
+      order: (lastSibling?.order ?? parent.order) + 1,
+      sign: 1,
+    };
+    get().addCFItem(newItem, lastSibling?.id);
+    get().revalidate();
+  },
+
+  removeItemFromSection: (itemId) => {
+    const state = get();
+    const item = state.cfItems.find(i => i.id === itemId);
+    if (!item || !item.isEditable) return;
+
+    const newGridData = new Map(state.gridData);
+    Array.from(newGridData.keys()).forEach(key => {
+      if (key.startsWith(`${itemId}:`)) {
+        newGridData.delete(key);
+      }
+    });
+    const newRefData = new Map(state.referenceData);
+    newRefData.delete(itemId);
+    set({
+      cfItems: state.cfItems.filter(i => i.id !== itemId),
+      gridData: newGridData,
+      referenceData: newRefData,
+    });
+    get().revalidate();
+  },
+
+  setReferenceData: (cfItemId, data) => {
+    const state = get();
+    const newRefData = new Map(state.referenceData);
+    if (data === null) {
+      newRefData.delete(cfItemId);
+    } else {
+      newRefData.set(cfItemId, data);
+    }
+    set({ referenceData: newRefData });
+  },
+
   toJSON: () => {
     const state = get();
     return {
@@ -226,6 +311,7 @@ export const useGridStore = create<GridState>((set, get) => ({
       cfItems: state.cfItems,
       mappings: state.mappings,
       gridData: Array.from(state.gridData.entries()),
+      referenceData: Array.from(state.referenceData.entries()),
       showNonCash: state.showNonCash,
     };
   },
@@ -271,11 +357,20 @@ export const useGridStore = create<GridState>((set, get) => ({
         typeof (entry[1] as CellValue).amount === 'number'
     ) : [];
 
+    const refEntries = Array.isArray(d.referenceData) ? d.referenceData.filter(
+      (entry): entry is [string, ReferenceData] =>
+        Array.isArray(entry) && entry.length === 2 &&
+        typeof entry[0] === 'string' &&
+        entry[1] !== null && typeof entry[1] === 'object' &&
+        typeof (entry[1] as ReferenceData).amount === 'number'
+    ) : [];
+
     set({
       accounts,
       cfItems,
       mappings,
       gridData: new Map(gridEntries),
+      referenceData: new Map(refEntries),
       showNonCash: typeof d.showNonCash === 'boolean' ? d.showNonCash : true,
       undoStack: [],
       redoStack: [],

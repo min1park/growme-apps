@@ -1,6 +1,11 @@
 import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey } from '@/types';
 import { CFItem } from '@/types/cf-template';
 
+/** 자산 계정 여부 (자산: 증감=기말-기초, 부채/자본: 증감=-(기말-기초)) */
+function isAssetCategory(bsCategory: string | undefined): boolean {
+  return bsCategory === 'current-asset' || bsCategory === 'noncurrent-asset';
+}
+
 export function validateGrid(
   accounts: Account[],
   cfItems: CFItem[],
@@ -16,7 +21,9 @@ export function validateGrid(
 
   const mappingMap = new Map(mappings.map(m => [m.accountId, m]));
 
-  // Column validation: 각 계정의 BS증감이 CF항목들에 완전히 배분되었는지 확인 (raw amounts, no sign)
+  // Column validation: 증감 + SUM(CF항목) = 0 검증
+  // 증감: 자산=기말-기초, 부채/자본=-(기말-기초)
+  // SUM(CF항목): 사용자가 입력한 CF방향 금액의 합
   for (const account of accounts) {
     const mapping = mappingMap.get(account.id);
     if (mapping?.cfCategory === 'cash') continue;
@@ -29,12 +36,17 @@ export function validateGrid(
       if (cell) sum += cell.amount;
     }
 
-    const diff = sum - account.change;
+    // 증감 = 자산이면 account.change, 부채/자본이면 -account.change
+    const adjustedChange = isAssetCategory(mapping?.bsCategory)
+      ? account.change
+      : -account.change;
+    // 검증: 증감 + SUM = 0 → diff = 증감 + SUM (0이면 통과)
+    const diff = adjustedChange + sum;
     columnChecks.set(account.id, diff);
     if (Math.abs(diff) < 0.5) passedColumns++;
   }
 
-  // Row validation: 각 CF항목의 signed 합계를 계산 (H-1 fix: 값이 입력된 행만 카운트)
+  // Row validation: 각 CF항목의 합계 (입력값 그대로, sign 미적용)
   const editableItems = cfItems.filter(i => i.isEditable);
   for (const item of editableItems) {
     let rawSum = 0;
@@ -47,21 +59,32 @@ export function validateGrid(
         hasCells = true;
       }
     }
-    // CF금액 = rawSum * sign (sign convention 적용)
-    const signedAmount = rawSum * item.sign;
-    rowChecks.set(item.id, signedAmount);
+    // CF금액 = 입력값 합계 (sign 미적용, 사용자가 CF방향으로 입력)
+    rowChecks.set(item.id, rawSum);
     if (hasCells) {
       totalRows++;
-      // 행 검증: 값이 입력된 행은 배분 완료로 판단
       passedRows++;
     }
   }
 
-  // Cash check: CF 합계가 현금 증감과 일치하는지 (signed amounts 사용)
+  // Noncash check: 비현금 거래 각 행의 SUM = 0 (대차 상계)
+  const noncashChecks = new Map<string, number>();
+  const noncashItems = cfItems.filter(i => i.sectionId === 'noncash' && i.isEditable);
+  for (const item of noncashItems) {
+    let sum = 0;
+    for (const account of accounts) {
+      const key = makeCellKey(item.id, account.id);
+      const cell = gridData.get(key);
+      if (cell) sum += cell.amount;
+    }
+    noncashChecks.set(item.id, sum);
+  }
+
+  // Cash check: CF 합계가 현금 증감과 일치하는지
   const opTotal = getSubtotalAmount('op', cfItems, accounts, gridData);
   const invTotal = getSubtotalAmount('inv', cfItems, accounts, gridData);
   const finTotal = getSubtotalAmount('fin', cfItems, accounts, gridData);
-  const fxAmount = getSignedItemAmount('cash-fx', cfItems, accounts, gridData);
+  const fxAmount = getItemAmount('cash-fx', accounts, gridData);
 
   const cashAccounts = accounts.filter(a => mappingMap.get(a.id)?.cfCategory === 'cash');
   const cashChange = cashAccounts.reduce((sum, a) => sum + a.change, 0);
@@ -70,6 +93,7 @@ export function validateGrid(
   return {
     columnChecks,
     rowChecks,
+    noncashChecks,
     cashCheck,
     passedColumns,
     totalColumns,
@@ -78,8 +102,8 @@ export function validateGrid(
   };
 }
 
-/** Raw amount (no sign) - 열검증용 */
-function getRawItemAmount(itemId: string, accounts: Account[], gridData: Map<CellKey, CellValue>): number {
+/** 개별 항목의 CF금액 (입력값 합계, sign 미적용) */
+function getItemAmount(itemId: string, accounts: Account[], gridData: Map<CellKey, CellValue>): number {
   let sum = 0;
   for (const account of accounts) {
     const key = makeCellKey(itemId, account.id);
@@ -89,14 +113,7 @@ function getRawItemAmount(itemId: string, accounts: Account[], gridData: Map<Cel
   return sum;
 }
 
-/** Signed amount - CF금액 표시용 (C-1 fix: sign 적용) */
-function getSignedItemAmount(itemId: string, cfItems: CFItem[], accounts: Account[], gridData: Map<CellKey, CellValue>): number {
-  const item = cfItems.find(i => i.id === itemId);
-  const sign = item?.sign ?? 1;
-  return getRawItemAmount(itemId, accounts, gridData) * sign;
-}
-
-/** Subtotal (signed) - CF 소계 계산 (C-1 fix: sign 적용, M-5 fix: 순환 방지) */
+/** Subtotal CF금액 = 하위 항목들의 CF금액 합계 (sign 미적용, 단순 합산) */
 export function getSubtotalAmount(
   subtotalId: string,
   cfItems: CFItem[],
@@ -105,7 +122,7 @@ export function getSubtotalAmount(
   visited?: Set<string>,
 ): number {
   const seen = visited ?? new Set<string>();
-  if (seen.has(subtotalId)) return 0; // 순환 참조 방지
+  if (seen.has(subtotalId)) return 0;
   seen.add(subtotalId);
 
   const children = cfItems.filter(i => i.parentId === subtotalId);
@@ -114,28 +131,7 @@ export function getSubtotalAmount(
     if (child.isSubtotal) {
       total += getSubtotalAmount(child.id, cfItems, accounts, gridData, seen);
     } else {
-      // C-1 fix: 개별 항목에 sign 적용
-      const rawAmount = getRawItemAmount(child.id, accounts, gridData);
-      total += rawAmount * child.sign;
-    }
-  }
-  return total;
-}
-
-/** Raw subtotal (no sign) - 열검증/배분 확인용 */
-export function getRawSubtotalAmount(
-  subtotalId: string,
-  cfItems: CFItem[],
-  accounts: Account[],
-  gridData: Map<CellKey, CellValue>,
-): number {
-  const children = cfItems.filter(i => i.parentId === subtotalId);
-  let total = 0;
-  for (const child of children) {
-    if (child.isSubtotal) {
-      total += getRawSubtotalAmount(child.id, cfItems, accounts, gridData);
-    } else {
-      total += getRawItemAmount(child.id, accounts, gridData);
+      total += getItemAmount(child.id, accounts, gridData);
     }
   }
   return total;
