@@ -26,7 +26,9 @@ export function validateGrid(
   // SUM(CF항목): 사용자가 입력한 CF방향 금액의 합
   for (const account of accounts) {
     const mapping = mappingMap.get(account.id);
+    // 현금 계정과 손익 계정은 정산 대상에서 제외
     if (mapping?.cfCategory === 'cash') continue;
+    if (mapping?.bsCategory === 'income-statement') continue;
 
     totalColumns++;
     let sum = 0;
@@ -88,6 +90,10 @@ export function validateGrid(
 
   const cashAccounts = accounts.filter(a => mappingMap.get(a.id)?.cfCategory === 'cash');
   const cashChange = cashAccounts.reduce((sum, a) => sum + a.change, 0);
+
+  // 손익 계정 합계 (당기순이익 참조용)
+  const plAccounts = accounts.filter(a => mappingMap.get(a.id)?.bsCategory === 'income-statement');
+  const _plTotal = plAccounts.reduce((sum, a) => sum + a.closingBalance, 0);
   const cashCheck = opTotal + invTotal + finTotal + fxAmount - cashChange;
 
   return {

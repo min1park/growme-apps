@@ -36,29 +36,29 @@ describe('MappingEngine', () => {
     expect(cashMappings.every(m => m.isLocked)).toBe(true);
   });
 
-  it('should map 매출채권 to operating-asset', () => {
+  it('should map 매출채권 to operating', () => {
     const mappings = autoMap(testAccounts);
     const arMapping = mappings.find(m => m.accountId === 'a3');
-    expect(arMapping?.cfCategory).toBe('operating-asset');
+    expect(arMapping?.cfCategory).toBe('operating');
     expect(arMapping?.bsCategory).toBe('current-asset');
   });
 
-  it('should map 대손충당금 to operating-adjust', () => {
+  it('should map 대손충당금 to operating', () => {
     const mappings = autoMap(testAccounts);
     const m = mappings.find(m => m.accountId === 'a4');
-    expect(m?.cfCategory).toBe('operating-adjust');
+    expect(m?.cfCategory).toBe('operating');
   });
 
-  it('should map 토지/건물/기계 to investing-ppe', () => {
+  it('should map 토지/건물/기계 to investing', () => {
     const mappings = autoMap(testAccounts);
-    expect(mappings.find(m => m.accountId === 'a5')?.cfCategory).toBe('investing-ppe');
-    expect(mappings.find(m => m.accountId === 'a6')?.cfCategory).toBe('investing-ppe');
-    expect(mappings.find(m => m.accountId === 'a13')?.cfCategory).toBe('investing-ppe');
+    expect(mappings.find(m => m.accountId === 'a5')?.cfCategory).toBe('investing');
+    expect(mappings.find(m => m.accountId === 'a6')?.cfCategory).toBe('investing');
+    expect(mappings.find(m => m.accountId === 'a13')?.cfCategory).toBe('investing');
   });
 
-  it('should map 감가상각누계액 to operating-adjust', () => {
+  it('should map 감가상각누계액 to operating', () => {
     const mappings = autoMap(testAccounts);
-    expect(mappings.find(m => m.accountId === 'a7')?.cfCategory).toBe('operating-adjust');
+    expect(mappings.find(m => m.accountId === 'a7')?.cfCategory).toBe('operating');
   });
 
   it('should map 사용권자산 to noncash', () => {
@@ -66,9 +66,9 @@ describe('MappingEngine', () => {
     expect(mappings.find(m => m.accountId === 'a8')?.cfCategory).toBe('noncash');
   });
 
-  it('should map 매입채무 to operating-liability', () => {
+  it('should map 매입채무 to operating', () => {
     const mappings = autoMap(testAccounts);
-    expect(mappings.find(m => m.accountId === 'a9')?.cfCategory).toBe('operating-liability');
+    expect(mappings.find(m => m.accountId === 'a9')?.cfCategory).toBe('operating');
   });
 
   it('should map 리스부채 to financing', () => {
@@ -86,9 +86,9 @@ describe('MappingEngine', () => {
     expect(reMapping?.isLocked).toBe(true);
   });
 
-  it('should map 특허권 to investing-intangible', () => {
+  it('should map 특허권 to investing', () => {
     const mappings = autoMap(testAccounts);
-    expect(mappings.find(m => m.accountId === 'a14')?.cfCategory).toBe('investing-intangible');
+    expect(mappings.find(m => m.accountId === 'a14')?.cfCategory).toBe('investing');
   });
 
   it('should map 단기차입금 to financing', () => {
@@ -109,6 +109,21 @@ describe('MappingEngine', () => {
     ];
     const mappings = autoMap(unknownAccounts);
     expect(mappings[0].isAutoMatched).toBe(false);
+  });
+
+  it('should map P&L accounts correctly', () => {
+    const plAccounts: Account[] = [
+      { id: 'pl1', code: '6010', name: '감가상각비', openingBalance: 0, closingBalance: 33000000, change: 33000000, columnIndex: 0 },
+      { id: 'pl2', code: '6020', name: '매출', openingBalance: 0, closingBalance: -500000000, change: -500000000, columnIndex: 1 },
+      { id: 'pl3', code: '6030', name: '이자비용', openingBalance: 0, closingBalance: 12000000, change: 12000000, columnIndex: 2 },
+    ];
+    const mappings = autoMap(plAccounts);
+    expect(mappings.find(m => m.accountId === 'pl1')?.bsCategory).toBe('income-statement');
+    expect(mappings.find(m => m.accountId === 'pl1')?.cfCategory).toBe('pl-adjust');
+    expect(mappings.find(m => m.accountId === 'pl2')?.bsCategory).toBe('income-statement');
+    expect(mappings.find(m => m.accountId === 'pl2')?.cfCategory).toBe('pl-none');
+    expect(mappings.find(m => m.accountId === 'pl3')?.bsCategory).toBe('income-statement');
+    expect(mappings.find(m => m.accountId === 'pl3')?.cfCategory).toBe('pl-adjust');
   });
 });
 
@@ -144,22 +159,13 @@ describe('CFTemplate', () => {
 
   it('should have correct sign conventions (C-1 fix)', () => {
     const items = getAllCFItems(KIFRS_CF_TEMPLATE);
-    // Sign convention: asset-sourced = -1, liability-sourced = 1
-    // 감가상각비: contra-asset 원천 → sign = -1
     expect(items.find(i => i.id === 'op-adj-depr')?.sign).toBe(-1);
-    // 이자수익: 미수이자(자산) 원천 → sign = -1
     expect(items.find(i => i.id === 'op-adj-interest-inc')?.sign).toBe(-1);
-    // 매출채권: 자산 원천 → sign = -1
     expect(items.find(i => i.id === 'op-wc-ar')?.sign).toBe(-1);
-    // 매입채무: 부채 원천 → sign = 1
     expect(items.find(i => i.id === 'op-wc-ap')?.sign).toBe(1);
-    // 유형자산 취득: 자산 원천 → sign = -1
     expect(items.find(i => i.id === 'inv-ppe-acquire')?.sign).toBe(-1);
-    // 리스부채 상환: 부채 원천 → sign = 1
     expect(items.find(i => i.id === 'fin-lease-repay')?.sign).toBe(1);
-    // 단기차입금 증가: 부채 원천 → sign = 1
     expect(items.find(i => i.id === 'fin-borrow-inc')?.sign).toBe(1);
-    // 단기차입금 상환: 부채 원천 → sign = 1
     expect(items.find(i => i.id === 'fin-borrow-dec')?.sign).toBe(1);
   });
 
@@ -167,19 +173,28 @@ describe('CFTemplate', () => {
     const items = getAllCFItems(KIFRS_CF_TEMPLATE);
     const subtotals = items.filter(i => i.isSubtotal);
     expect(subtotals.length).toBeGreaterThan(0);
-    expect(subtotals.find(i => i.id === 'op')).toBeDefined(); // I. 영업활동
-    expect(subtotals.find(i => i.id === 'inv')).toBeDefined(); // II. 투자활동
-    expect(subtotals.find(i => i.id === 'fin')).toBeDefined(); // III. 재무활동
+    expect(subtotals.find(i => i.id === 'op')).toBeDefined();
+    expect(subtotals.find(i => i.id === 'inv')).toBeDefined();
+    expect(subtotals.find(i => i.id === 'fin')).toBeDefined();
   });
 
   it('getAllCFItems should return flat array', () => {
     const items = getAllCFItems(KIFRS_CF_TEMPLATE);
     expect(items.length).toBeGreaterThan(40);
-    // Check parentId references are valid
     for (const item of items) {
       if (item.parentId) {
         const parent = items.find(i => i.id === item.parentId);
         expect(parent).toBeDefined();
+      }
+    }
+  });
+
+  it('should use simplified CF categories in defaultCfCategories', () => {
+    const items = getAllCFItems(KIFRS_CF_TEMPLATE);
+    const withDefaults = items.filter(i => i.defaultCfCategories?.length);
+    for (const item of withDefaults) {
+      for (const cat of item.defaultCfCategories!) {
+        expect(['operating', 'investing', 'financing', 'equity', 'noncash', 'pl-adjust', 'pl-none', 'cash']).toContain(cat);
       }
     }
   });
@@ -199,28 +214,27 @@ describe('ValidationEngine', () => {
 
   const mappings: CoAMapping[] = [
     { accountId: 'cash1', bsCategory: 'current-asset', cfCategory: 'cash', isLocked: true },
-    { accountId: 'ar1', bsCategory: 'current-asset', cfCategory: 'operating-asset', isLocked: false },
-    { accountId: 'bldg1', bsCategory: 'noncurrent-asset', cfCategory: 'investing-ppe', isLocked: false },
-    { accountId: 'depr1', bsCategory: 'noncurrent-asset', cfCategory: 'operating-adjust', isLocked: false },
-    { accountId: 'ap1', bsCategory: 'current-liability', cfCategory: 'operating-liability', isLocked: false },
+    { accountId: 'ar1', bsCategory: 'current-asset', cfCategory: 'operating', isLocked: false },
+    { accountId: 'bldg1', bsCategory: 'noncurrent-asset', cfCategory: 'investing', isLocked: false },
+    { accountId: 'depr1', bsCategory: 'noncurrent-asset', cfCategory: 'operating', isLocked: false },
+    { accountId: 'ap1', bsCategory: 'current-liability', cfCategory: 'operating', isLocked: false },
   ];
 
   const cfItems = getAllCFItems(KIFRS_CF_TEMPLATE);
 
   it('should detect unbalanced columns', () => {
     const gridData = new Map<string, CellValue>();
-    // 매출채권 change = 2000, but we only allocate 1500
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 1500 });
-
+    // 매출채권 change=2000 (자산증가) → 사용자가 -1500 입력 (부족)
+    // 검증: adjustedChange(2000) + sum(-1500) = 500 (불균형)
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -1500 });
     const result = validateGrid(accounts, cfItems, mappings, gridData as any);
-    expect(result.columnChecks.get('ar1')).toBe(-500); // 1500 - 2000 = -500
+    expect(result.columnChecks.get('ar1')).toBe(500);
   });
 
   it('should show balanced column when fully allocated', () => {
     const gridData = new Map<string, CellValue>();
-    // 매출채권 change = 2000, allocate exactly 2000
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 2000 });
-
+    // 매출채권 change=2000 → 사용자가 -2000 입력 → 검증=0
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -2000 });
     const result = validateGrid(accounts, cfItems, mappings, gridData as any);
     expect(result.columnChecks.get('ar1')).toBe(0);
     expect(result.passedColumns).toBeGreaterThan(0);
@@ -232,57 +246,57 @@ describe('ValidationEngine', () => {
     expect(result.columnChecks.has('cash1')).toBe(false);
   });
 
-  it('should calculate signed subtotals correctly (C-1)', () => {
+  it('should exclude income-statement accounts from column checks', () => {
+    const plAccounts = [
+      ...accounts,
+      { id: 'pl1', code: '6010', name: '감가상각비', openingBalance: 0, closingBalance: 33000, change: 33000, columnIndex: 5 },
+    ];
+    const plMappings = [
+      ...mappings,
+      { accountId: 'pl1', bsCategory: 'income-statement' as const, cfCategory: 'pl-adjust' as const, isLocked: false },
+    ];
     const gridData = new Map<string, CellValue>();
-    // 매출채권 BS증감 = 2000 (자산 증가) → op-wc-ar에 배분
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 2000 });
-    // 매입채무 BS증감 = 1000 (부채 증가) → op-wc-ap에 배분
-    gridData.set(makeCellKey('op-wc-ap', 'ap1'), { amount: 1000 });
+    const result = validateGrid(plAccounts, cfItems, plMappings, gridData as any);
+    expect(result.columnChecks.has('pl1')).toBe(false);
+  });
 
-    // op-wc subtotal (signed):
-    // AR: 2000 × sign(-1) = -2000 (자산증가 → CF마이너스)
-    // AP: 1000 × sign(1) = 1000 (부채증가 → CF플러스)
-    // Total: -2000 + 1000 = -1000
+  it('should calculate subtotals correctly (C-1)', () => {
+    const gridData = new Map<string, CellValue>();
+    // AR: 사용자가 -2000 입력 (자산증가 → CF 마이너스)
+    // AP: 사용자가 1000 입력 (부채증가 → CF 플러스)
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -2000 });
+    gridData.set(makeCellKey('op-wc-ap', 'ap1'), { amount: 1000 });
+    // subtotal = raw sum = -2000 + 1000 = -1000
     const wcTotal = getSubtotalAmount('op-wc', cfItems, accounts, gridData as any);
     expect(wcTotal).toBe(-1000);
   });
 
-  it('should calculate nested signed subtotals (C-1)', () => {
+  it('should calculate nested subtotals (C-1)', () => {
     const gridData = new Map<string, CellValue>();
-    // 당기순이익: 이익잉여금 등에서 배분, sign=1
+    // 당기순이익: 500
     gridData.set(makeCellKey('op-ni', 'ar1'), { amount: 500 });
-    // 감가상각비: 감가상각누계에서 배분 (-2000), sign=-1 → CF = -(-2000)×(-1) = ... wait
-    // 감가상각누계 BS증감 = -2000 → 셀 값 = -2000 → CF = -2000 × (-1) = 2000
-    gridData.set(makeCellKey('op-adj-depr', 'depr1'), { amount: -2000 });
-    // 매출채권 BS증감 = 2000 → CF = 2000 × (-1) = -2000
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 2000 });
-
-    // op-generated = op-ni + op-adjust + op-wc
-    // op-ni: 500 × 1 = 500
-    // op-adjust (depr): -2000 × (-1) = 2000
-    // op-wc (ar): 2000 × (-1) = -2000
-    // Total: 500 + 2000 + (-2000) = 500
+    // 감가상각비: 2000 (비현금비용 가산)
+    gridData.set(makeCellKey('op-adj-depr', 'depr1'), { amount: 2000 });
+    // 매출채권: -2000 (자산증가)
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -2000 });
+    // op-generated = op-ni + op-adjust + op-wc = 500 + 2000 + (-2000) = 500
     const generated = getSubtotalAmount('op-generated', cfItems, accounts, gridData as any);
     expect(generated).toBe(500);
   });
 
   it('should only count rows with data in row validation (H-1)', () => {
     const gridData = new Map<string, CellValue>();
-    // 일부 행에만 데이터 입력
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 2000 });
-
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -2000 });
     const result = validateGrid(accounts, cfItems, mappings, gridData as any);
-    // 데이터가 있는 행만 카운트
     expect(result.totalRows).toBe(1);
     expect(result.passedRows).toBe(1);
   });
 
-  it('should show row checks with signed amounts (C-1)', () => {
+  it('should show row checks with raw amounts', () => {
     const gridData = new Map<string, CellValue>();
-    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: 2000 });
-
+    gridData.set(makeCellKey('op-wc-ar', 'ar1'), { amount: -2000 });
     const result = validateGrid(accounts, cfItems, mappings, gridData as any);
-    // rowCheck stores signed amount: 2000 × (-1) = -2000
+    // rowChecks = raw sum (no sign applied)
     expect(result.rowChecks.get('op-wc-ar')).toBe(-2000);
   });
 });

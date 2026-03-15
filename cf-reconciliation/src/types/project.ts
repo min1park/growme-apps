@@ -38,19 +38,17 @@ export type BSCategory =
   | 'noncurrent-asset'
   | 'current-liability'
   | 'noncurrent-liability'
-  | 'equity';
+  | 'equity'
+  | 'income-statement';
 
 export type CFCategory =
   | 'cash'
-  | 'operating-adjust'
-  | 'operating-asset'
-  | 'operating-liability'
-  | 'investing-ppe'
-  | 'investing-intangible'
-  | 'investing-financial'
-  | 'investing-other'
+  | 'operating'
+  | 'investing'
   | 'financing'
   | 'equity'
+  | 'pl-adjust'
+  | 'pl-none'
   | 'noncash';
 
 export const BS_CATEGORY_LABELS: Record<BSCategory, string> = {
@@ -59,18 +57,27 @@ export const BS_CATEGORY_LABELS: Record<BSCategory, string> = {
   'current-liability': '유동부채',
   'noncurrent-liability': '비유동부채',
   'equity': '자본',
+  'income-statement': '손익',
 };
 
 export const CF_CATEGORY_LABELS: Record<CFCategory, string> = {
   'cash': '현금',
-  'operating-adjust': '영업-조정',
-  'operating-asset': '영업-자산',
-  'operating-liability': '영업-부채',
-  'investing-ppe': '투자-유형',
-  'investing-intangible': '투자-무형',
-  'investing-financial': '투자-금융',
-  'investing-other': '투자-기타',
+  'operating': '영업',
+  'investing': '투자',
   'financing': '재무',
   'equity': '자본',
+  'pl-adjust': '손익-조정',
+  'pl-none': '손익-해당없음',
   'noncash': '비현금',
+};
+
+/** 구 CF분류 → 신 CF분류 마이그레이션 맵 (기존 데이터 호환) */
+export const CF_CATEGORY_MIGRATION: Record<string, CFCategory> = {
+  'operating-adjust': 'operating',
+  'operating-asset': 'operating',
+  'operating-liability': 'operating',
+  'investing-ppe': 'investing',
+  'investing-intangible': 'investing',
+  'investing-financial': 'investing',
+  'investing-other': 'investing',
 };

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey, GridAction, ReferenceData } from '@/types';
+import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey, GridAction, ReferenceData, CF_CATEGORY_MIGRATION, CFCategory } from '@/types';
 import { CFItem } from '@/types/cf-template';
 import { KIFRS_CF_TEMPLATE, getAllCFItems } from '@/data/cf-template-kifrs';
 import { validateGrid, getSubtotalAmount } from '@/engines/validation';
@@ -347,7 +347,11 @@ export const useGridStore = create<GridState>((set, get) => ({
       (m): m is CoAMapping =>
         m !== null && typeof m === 'object' &&
         'accountId' in m && 'bsCategory' in m && 'cfCategory' in m
-    ) : [];
+    ).map(m => {
+      // 구 CF분류 → 신 CF분류 마이그레이션
+      const migrated = CF_CATEGORY_MIGRATION[m.cfCategory];
+      return migrated ? { ...m, cfCategory: migrated as CFCategory } : m;
+    }) : [];
 
     const gridEntries = Array.isArray(d.gridData) ? d.gridData.filter(
       (entry): entry is [CellKey, CellValue] =>

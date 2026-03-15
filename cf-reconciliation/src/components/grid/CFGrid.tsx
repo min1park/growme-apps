@@ -167,10 +167,13 @@ export function CFGrid() {
     });
   }, [cfItems, showNonCash, collapsedSections]);
 
-  // Filter accounts (exclude cash for grid body, but show in header)
+  // Filter accounts (exclude cash and income-statement for grid body)
   const mappingMap = useMemo(() => new Map(mappings.map(m => [m.accountId, m])), [mappings]);
   const gridAccounts = useMemo(() =>
-    accounts.filter(a => mappingMap.get(a.id)?.cfCategory !== 'cash'),
+    accounts.filter(a => {
+      const m = mappingMap.get(a.id);
+      return m?.cfCategory !== 'cash' && m?.bsCategory !== 'income-statement';
+    }),
     [accounts, mappingMap]
   );
 
@@ -202,6 +205,15 @@ export function CFGrid() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
+
+  // 손익 계정 합계 (당기순이익 참조)
+  const plSummary = useMemo(() => {
+    const plAccounts = accounts.filter(a => mappingMap.get(a.id)?.bsCategory === 'income-statement');
+    if (plAccounts.length === 0) return null;
+    const total = plAccounts.reduce((sum, a) => sum + a.closingBalance, 0);
+    const adjustCount = plAccounts.filter(a => mappingMap.get(a.id)?.cfCategory === 'pl-adjust').length;
+    return { total, count: plAccounts.length, adjustCount };
+  }, [accounts, mappingMap]);
 
   const getItemAmount = useCallback((item: CFItem): number => {
     if (item.isSubtotal) {
@@ -256,6 +268,14 @@ export function CFGrid() {
           />
           비현금 거래 표시
         </label>
+        {plSummary && (
+          <span className="text-xs text-muted-foreground border-l pl-3 ml-2">
+            손익계정 {plSummary.count}개
+            (조정 {plSummary.adjustCount}개)
+            → <strong className="text-blue-600">당기순이익: {formatNumber(plSummary.total)}</strong>
+            <span className="text-[10px] ml-1">(이익잉여금 열에 입력)</span>
+          </span>
+        )}
         <div className="flex-1" />
         <Button variant="outline" size="xs" onClick={handleExport}>
           <DownloadIcon className="h-3 w-3 mr-1" />

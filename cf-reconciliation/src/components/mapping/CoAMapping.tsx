@@ -108,7 +108,7 @@ export function CoAMappingView({ accounts, mappings, onMappingsChange, onComplet
                   <td className="px-2 py-1">
                     <select
                       className="w-full rounded border px-1 py-0.5 text-xs bg-background"
-                      value={mapping?.cfCategory ?? 'operating-asset'}
+                      value={mapping?.cfCategory ?? 'operating'}
                       onChange={e => handleChange(account.id, 'cfCategory', e.target.value)}
                       disabled={mapping?.isLocked}
                     >

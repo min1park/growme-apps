@@ -138,6 +138,26 @@ const CF_LABEL_TO_KEY = new Map<string, CFCategory>(
   Object.entries(CF_CATEGORY_LABELS).map(([k, v]) => [v, k as CFCategory])
 );
 
+// 구 CF분류 라벨 호환 (기존 파일 지원)
+const CF_LEGACY_LABELS: Record<string, CFCategory> = {
+  '영업-조정': 'operating',
+  '영업-자산': 'operating',
+  '영업-부채': 'operating',
+  '투자-유형': 'investing',
+  '투자-무형': 'investing',
+  '투자-금융': 'investing',
+  '투자-기타': 'investing',
+  '영업-손익': 'pl-adjust',    // 사용자 커스텀 라벨 지원
+  // 구 영문 키 호환
+  'operating-adjust': 'operating',
+  'operating-asset': 'operating',
+  'operating-liability': 'operating',
+  'investing-ppe': 'investing',
+  'investing-intangible': 'investing',
+  'investing-financial': 'investing',
+  'investing-other': 'investing',
+};
+
 function parseBSCategory(val: unknown): BSCategory | undefined {
   const s = String(val ?? '').trim();
   if (!s) return undefined;
@@ -151,8 +171,12 @@ function parseBSCategory(val: unknown): BSCategory | undefined {
 function parseCFCategory(val: unknown): CFCategory | undefined {
   const s = String(val ?? '').trim();
   if (!s) return undefined;
+  // 현재 한글 라벨
   if (CF_LABEL_TO_KEY.has(s)) return CF_LABEL_TO_KEY.get(s);
+  // 현재 영문 키
   if (Object.keys(CF_CATEGORY_LABELS).includes(s)) return s as CFCategory;
+  // 구 라벨/키 호환
+  if (s in CF_LEGACY_LABELS) return CF_LEGACY_LABELS[s];
   return undefined;
 }
 
