@@ -5,9 +5,9 @@ import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Account } from '@/types';
-import { parseFile, getSheetData, detectColumns, parseTB, TBParseConfig } from '@/services/tb-parser';
+import { parseFile, getSheetData, detectColumns, parseTB, validateTB, TBParseConfig, DetectedColumns } from '@/services/tb-parser';
 import { formatNumber } from '@/lib/format';
-import { UploadIcon, FileSpreadsheetIcon, DownloadIcon } from 'lucide-react';
+import { UploadIcon, FileSpreadsheetIcon, DownloadIcon, CheckCircle2Icon, AlertCircleIcon } from 'lucide-react';
 import { generateTBTemplate } from '@/services/excel-exporter';
 
 interface TBUploadProps {
@@ -24,6 +24,7 @@ export function TBUpload({ onComplete }: TBUploadProps) {
     sheetName: '',
     startRow: 1,
     columns: { code: 0, name: 1, opening: 2, closing: 3 },
+    format: '4col',
   });
   const [preview, setPreview] = useState<Account[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -44,14 +45,21 @@ export function TBUpload({ onComplete }: TBUploadProps) {
     const d = getSheetData(wb, name);
     setData(d);
     if (d.length > 0) {
-      const detected = detectColumns(d[0] as unknown[]);
+      const detected: DetectedColumns = detectColumns(d[0] as unknown[]);
       const newCols = {
         code: detected.code ?? 0,
         name: detected.name ?? 1,
         opening: detected.opening ?? 2,
-        closing: detected.closing ?? 3,
+        closing: detected.closing ?? (detected.format === '6col' ? 5 : 3),
+        debit: detected.debit,
+        credit: detected.credit,
       };
-      const newConfig: TBParseConfig = { sheetName: name, startRow: 1, columns: newCols };
+      const newConfig: TBParseConfig = {
+        sheetName: name,
+        startRow: 1,
+        columns: newCols,
+        format: detected.format,
+      };
       setConfig(newConfig);
       const accounts = parseTB(d, newConfig);
       setPreview(accounts);
@@ -85,8 +93,10 @@ export function TBUpload({ onComplete }: TBUploadProps) {
     if (file) handleFile(file);
   }, [handleFile]);
 
-  const totalOpening = preview.reduce((s, a) => s + a.openingBalance, 0);
-  const totalClosing = preview.reduce((s, a) => s + a.closingBalance, 0);
+  // 검증
+  const validation = validateTB(preview);
+  const totalOpening = validation.openingSum;
+  const totalClosing = validation.closingSum;
 
   const colOptions = data.length > 0
     ? (data[0] as unknown[]).map((cell, idx) => ({
@@ -140,6 +150,11 @@ export function TBUpload({ onComplete }: TBUploadProps) {
           <div className="flex items-center gap-2 text-sm">
             <FileSpreadsheetIcon className="h-4 w-4 text-green-600" />
             <span className="font-medium">{fileName}</span>
+            {config.format === '6col' && (
+              <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                6컬럼 형식 (전기이월/차변/대변/총합계)
+              </span>
+            )}
             <Button variant="ghost" size="xs" onClick={() => { setWorkbook(null); setPreview([]); }}>변경</Button>
           </div>
 
@@ -171,24 +186,39 @@ export function TBUpload({ onComplete }: TBUploadProps) {
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">기초열</label>
+              <label className="text-xs text-muted-foreground block mb-1">{config.format === '6col' ? '전기이월열' : '기초열'}</label>
               <select className="w-full rounded-lg border px-2 py-1.5 text-sm bg-background" value={config.columns.opening} onChange={e => handleConfigChange('opening', Number(e.target.value))}>
                 {colOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">기말열</label>
+              <label className="text-xs text-muted-foreground block mb-1">{config.format === '6col' ? '총합계열' : '기말열'}</label>
               <select className="w-full rounded-lg border px-2 py-1.5 text-sm bg-background" value={config.columns.closing} onChange={e => handleConfigChange('closing', Number(e.target.value))}>
                 {colOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>계정 수: <strong className="text-foreground">{preview.length}</strong></span>
-            <span>기초합계: <strong className="text-foreground">{formatNumber(totalOpening)}</strong></span>
-            <span>기말합계: <strong className="text-foreground">{formatNumber(totalClosing)}</strong></span>
-            <span>BS 대차: <strong className={Math.abs(totalClosing) < 0.5 ? 'text-green-600' : 'text-red-600'}>{formatNumber(totalClosing)}</strong></span>
+          {/* 검증 결과 표시 */}
+          <div className="flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">계정 수: <strong className="text-foreground">{preview.length}</strong></span>
+            <span className="text-muted-foreground">
+              기초합계: <strong className={Math.abs(totalOpening) < 0.5 ? 'text-green-600' : 'text-orange-600'}>{formatNumber(totalOpening)}</strong>
+            </span>
+            <span className="text-muted-foreground">
+              기말합계: <strong className={Math.abs(totalClosing) < 0.5 ? 'text-green-600' : 'text-orange-600'}>{formatNumber(totalClosing)}</strong>
+            </span>
+            {validation.isBalanced ? (
+              <span className="flex items-center gap-1 text-green-600">
+                <CheckCircle2Icon className="h-4 w-4" />
+                대차균형
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-orange-600">
+                <AlertCircleIcon className="h-4 w-4" />
+                대차불균형 (BS계정만 업로드 시 정상)
+              </span>
+            )}
           </div>
 
           {preview.length > 0 && (
