@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Account } from '@/types';
 import { parseFile, getSheetData, detectColumns, parseTB, TBParseConfig } from '@/services/tb-parser';
 import { formatNumber } from '@/lib/format';
-import { UploadIcon, FileSpreadsheetIcon } from 'lucide-react';
+import { UploadIcon, FileSpreadsheetIcon, DownloadIcon } from 'lucide-react';
+import { generateTBTemplate } from '@/services/excel-exporter';
 
 interface TBUploadProps {
   onComplete: (accounts: Account[]) => void;
@@ -97,18 +98,42 @@ export function TBUpload({ onComplete }: TBUploadProps) {
   return (
     <div className="flex flex-col h-full p-4 overflow-auto">
       {!workbook ? (
-        <div
-          className="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl p-16 cursor-pointer hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-200 bg-white"
-          onDrop={handleDrop}
-          onDragOver={e => e.preventDefault()}
-          onClick={() => fileRef.current?.click()}
-        >
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-5">
-            <UploadIcon className="h-8 w-8 text-blue-500" />
+        <div className="space-y-4">
+          <div
+            className="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl p-16 cursor-pointer hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-200 bg-white"
+            onDrop={handleDrop}
+            onDragOver={e => e.preventDefault()}
+            onClick={() => fileRef.current?.click()}
+          >
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-5">
+              <UploadIcon className="h-8 w-8 text-blue-500" />
+            </div>
+            <p className="text-sm font-semibold mb-1 text-foreground">Excel/CSV 파일을 드래그하거나 클릭하세요</p>
+            <p className="text-xs text-muted-foreground">.xlsx, .xls, .csv 지원</p>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} className="hidden" />
           </div>
-          <p className="text-sm font-semibold mb-1 text-foreground">Excel/CSV 파일을 드래그하거나 클릭하세요</p>
-          <p className="text-xs text-muted-foreground">.xlsx, .xls, .csv 지원</p>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} className="hidden" />
+
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span>시산표 양식이 없으신가요?</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={async (e) => {
+                e.stopPropagation();
+                const blob = await generateTBTemplate();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '시산표_입력템플릿.xlsx';
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <DownloadIcon className="h-4 w-4" />
+              입력 템플릿 다운로드
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

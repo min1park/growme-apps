@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  distDir: 'dist',
   basePath: '/cf-reconciliation',
   images: {
     unoptimized: true,
