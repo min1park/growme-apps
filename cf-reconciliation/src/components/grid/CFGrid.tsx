@@ -538,7 +538,7 @@ export function CFGrid() {
                         </button>
                       )}
                       <span className="truncate flex-1">{item.label}</span>
-                      {item.isSubtotal && ['op-adjust', 'op-wc', 'inv-in', 'inv-out', 'fin-in', 'fin-out', 'nc'].includes(item.id) && (
+                      {(item.isSubtotal || item.id === 'nc') && ['op-adjust', 'op-wc', 'inv-in', 'inv-out', 'fin-in', 'fin-out', 'nc'].includes(item.id) && (
                         <button
                           className="ml-1 p-0.5 rounded hover:bg-blue-100 text-blue-600 shrink-0"
                           title="항목 추가"
