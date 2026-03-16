@@ -24,7 +24,8 @@ const LABEL_COL_WIDTH = 300;  // D: CF항목 라벨
 const E_COL_WIDTH = 100;      // E: CF금액
 const LEFT_PANEL_WIDTH = VERIFY_COL_WIDTH + REF_AMT_COL_WIDTH + REF_SRC_COL_WIDTH + LABEL_COL_WIDTH + E_COL_WIDTH;
 const CELL_WIDTH = 110;
-const HEADER_HEIGHT = 80;
+const HEADER_HEIGHT = 64;
+const FOOTER_HEIGHT = 28;
 
 /** 참조금액 셀 - 클릭하여 참조금액/출처/부호 편집 */
 function RefAmountCell({
@@ -382,8 +383,6 @@ export function CFGrid() {
               }}
             >
               {gridAccounts.map((account, idx) => {
-                const colDiff = validation.columnChecks.get(account.id) ?? 0;
-                const isOk = Math.abs(colDiff) < 0.5;
                 // 증감 부호 표시: 자산=기말-기초, 부채/자본=-(기말-기초)
                 const mapping = mappingMap.get(account.id);
                 const isAsset = mapping?.bsCategory === 'current-asset' || mapping?.bsCategory === 'noncurrent-asset';
@@ -431,12 +430,6 @@ export function CFGrid() {
                     <div className="px-1 text-[10px] text-right font-mono" title={`증감: ${isAsset ? '기말-기초' : '-(기말-기초)'}`}>
                       {formatNumber(adjustedChange)}
                     </div>
-                    <div className={cn(
-                      'px-1 text-[10px] text-right font-mono',
-                      isOk ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'
-                    )}>
-                      {isOk ? 'OK' : formatNumber(colDiff)}
-                    </div>
                   </div>
                 );
               })}
@@ -452,7 +445,7 @@ export function CFGrid() {
             top: HEADER_HEIGHT,
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: FOOTER_HEIGHT,
           }}
           onScroll={() => {
             // Force re-render for header sync
@@ -623,6 +616,77 @@ export function CFGrid() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Footer: 검증 행 (하단 고정) */}
+        <div
+          className="absolute left-0 right-0 z-20 border-t bg-muted/30"
+          style={{ bottom: 0, height: FOOTER_HEIGHT }}
+        >
+          {/* Footer left panel */}
+          <div
+            className="absolute top-0 left-0 z-30 flex items-center bg-muted/50 border-r"
+            style={{ width: LEFT_PANEL_WIDTH, height: FOOTER_HEIGHT }}
+          >
+            <div className="flex items-center text-[11px] font-medium text-muted-foreground px-2" style={{ width: VERIFY_COL_WIDTH + REF_AMT_COL_WIDTH + REF_SRC_COL_WIDTH }}>
+              검증
+            </div>
+            <div className="flex items-center px-2 text-[11px] font-medium" style={{ width: LABEL_COL_WIDTH }}>
+              배분 잔여 (증감 + CF입력 합계)
+            </div>
+            <div className="flex items-center justify-end px-1 text-[10px] font-mono" style={{ width: E_COL_WIDTH }}>
+              {(() => {
+                const passRate = validation.totalColumns > 0
+                  ? Math.round((validation.passedColumns / validation.totalColumns) * 100)
+                  : 0;
+                return (
+                  <span className={cn(
+                    passRate === 100 ? 'text-green-600 font-bold' : 'text-muted-foreground'
+                  )}>
+                    {validation.passedColumns}/{validation.totalColumns}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Footer scrollable cells */}
+          <div
+            className="absolute top-0 overflow-hidden"
+            style={{ left: LEFT_PANEL_WIDTH, right: 0, height: FOOTER_HEIGHT }}
+          >
+            <div
+              className="relative"
+              style={{
+                width: colVirtualizer.getTotalSize(),
+                height: FOOTER_HEIGHT,
+                transform: `translateX(-${bodyRef.current?.scrollLeft ?? 0}px)`,
+              }}
+            >
+              {gridAccounts.map((account, idx) => {
+                const colDiff = validation.columnChecks.get(account.id) ?? 0;
+                const isOk = Math.abs(colDiff) < 0.5;
+                // 입력된 금액이 있는지 확인
+                const hasInput = cfItems.some(item => {
+                  const key = makeCellKey(item.id, account.id);
+                  return gridData.has(key);
+                });
+                return (
+                  <div
+                    key={account.id}
+                    className={cn(
+                      'absolute top-0 border-r flex items-center justify-end px-1 text-[11px] font-mono font-medium',
+                      isOk ? 'text-green-600 bg-green-50/80' : hasInput ? 'text-orange-600 bg-orange-50/80' : 'text-red-500 bg-red-50/50',
+                    )}
+                    style={{ left: idx * CELL_WIDTH, width: CELL_WIDTH, height: FOOTER_HEIGHT }}
+                    title={isOk ? '배분 완료' : `잔여: ${formatNumber(colDiff)} (증감 + CF입력 합계)`}
+                  >
+                    {isOk ? 'OK' : formatNumber(colDiff)}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
