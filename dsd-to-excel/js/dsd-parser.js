@@ -306,57 +306,85 @@ function splitFinancialStatements(fsSection) {
         children.push(child);
     }
 
-    // 재무제표 데이터 TABLE(BORDER=1) 위치 찾기
-    const border1Indices = [];
-    for (let i = 0; i < children.length; i++) {
-        if (children[i].tagName === 'TABLE' && children[i].getAttribute('BORDER') === '1') {
-            border1Indices.push(i);
-        }
+    // ACLASS로 재무제표 유형 판별
+    function detectFsTypeByAclass(aclass) {
+        if (!aclass) return null;
+        const upper = aclass.toUpperCase();
+        if (upper.startsWith('PBS')) return 'bs';
+        if (upper.startsWith('PIS')) return 'is';
+        if (upper.startsWith('PEF') || upper.startsWith('PCE')) return 'ce';
+        if (upper.startsWith('PCF')) return 'cf';
+        return null;
     }
 
-    // 각 BORDER=1 테이블의 제목으로 재무제표 유형 판별
+    // 제목 텍스트로 재무제표 유형 판별
+    function detectFsTypeByTitle(text) {
+        const noSpace = text.replace(/\s/g, '');
+        if (noSpace.includes('재무상태표')) return 'bs';
+        if (noSpace.includes('손익계산서') || noSpace.includes('포괄손익계산서')) return 'is';
+        if (noSpace.includes('자본변동표')) return 'ce';
+        if (noSpace.includes('현금흐름표')) return 'cf';
+        return null;
+    }
+
+    // BORDER=1 TABLE 또는 TABLE-GROUP 내 BORDER=1 TABLE 위치 찾기
     const fsBlocks = []; // { type, start, end }
-    for (const bi of border1Indices) {
-        const dataTable = children[bi];
-        const thead = findChild(dataTable, 'THEAD');
-        if (!thead) continue;
 
-        // 제목 TABLE = 바로 앞 TABLE (BORDER=0)
-        let titleIdx = bi - 1;
-        while (titleIdx >= 0 && ['P', 'WARNING', 'INSERTION'].includes(children[titleIdx].tagName)) {
-            titleIdx--;
-        }
-
-        // 제목 텍스트로 유형 판별
-        let titleText = '';
-        if (titleIdx >= 0 && children[titleIdx].tagName === 'TABLE') {
-            titleText = getText(children[titleIdx]).trim();
-        }
-
-        // 각주 TABLE = 바로 뒤
-        const footerIdx = bi + 1;
-
-        // 유형 판별 (공백 제거 후 비교)
-        const noSpace = titleText.replace(/\s/g, '');
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        let dataTable = null;
         let fsType = null;
-        if (noSpace.includes('재무상태표')) fsType = 'bs';
-        else if (noSpace.includes('손익계산서')) fsType = 'is';
-        else if (noSpace.includes('자본변동표')) fsType = 'ce';
-        else if (noSpace.includes('현금흐름표')) fsType = 'cf';
 
-        if (fsType) {
-            const start = titleIdx;
-            let end = footerIdx;
-            // 각주 TABLE 확인
-            if (end < children.length && children[end].tagName === 'TABLE') {
-                const footerText = getText(children[end]).trim();
-                if (footerText.includes('주석') || footerText.includes('별첨')) {
-                    // 각주 포함
-                } else {
-                    end = bi; // 데이터까지만
+        if (child.tagName === 'TABLE-GROUP') {
+            // TABLE-GROUP: ACLASS로 유형 판별, 내부 BORDER=1 TABLE 사용
+            fsType = detectFsTypeByAclass(child.getAttribute('ACLASS'));
+            const tables = findChildren(child, 'TABLE');
+            for (const t of tables) {
+                if (t.getAttribute('BORDER') === '1') {
+                    dataTable = t;
+                    break;
                 }
             }
-            fsBlocks.push({ type: fsType, start, end });
+            // ACLASS로 못 찾으면 내부 텍스트로 시도
+            if (!fsType && tables.length > 0) {
+                fsType = detectFsTypeByTitle(getText(tables[0]));
+            }
+            if (dataTable && fsType) {
+                fsBlocks.push({ type: fsType, start: i, end: i });
+            }
+        } else if (child.tagName === 'TABLE' && child.getAttribute('BORDER') === '1') {
+            // 직접 TABLE: 기존 로직
+            dataTable = child;
+            const thead = findChild(dataTable, 'THEAD');
+            if (!thead) continue;
+
+            // 바로 앞 요소에서 제목 찾기
+            let titleIdx = i - 1;
+            while (titleIdx >= 0 && ['P', 'WARNING', 'INSERTION'].includes(children[titleIdx].tagName)) {
+                titleIdx--;
+            }
+            let titleText = '';
+            if (titleIdx >= 0 && children[titleIdx].tagName === 'TABLE') {
+                titleText = getText(children[titleIdx]).trim();
+            }
+            fsType = detectFsTypeByTitle(titleText);
+
+            if (fsType) {
+                const start = titleIdx >= 0 ? titleIdx : i;
+                let end = i + 1;
+                // 각주 TABLE 확인
+                if (end < children.length && children[end].tagName === 'TABLE') {
+                    const footerText = getText(children[end]).trim();
+                    if (footerText.includes('주석') || footerText.includes('별첨')) {
+                        // 각주 포함
+                    } else {
+                        end = i;
+                    }
+                } else {
+                    end = i;
+                }
+                fsBlocks.push({ type: fsType, start, end });
+            }
         }
     }
 
@@ -368,9 +396,9 @@ function splitFinancialStatements(fsSection) {
         }
     }
 
-    // fsHeader: 첫 번째 재무제표 제목 전까지
-    const firstTitle = fsBlocks.length > 0 ? fsBlocks[0].start : children.length;
-    for (let i = 0; i < firstTitle; i++) {
+    // fsHeader: 첫 번째 재무제표 블록 전까지
+    const firstStart = fsBlocks.length > 0 ? fsBlocks[0].start : children.length;
+    for (let i = 0; i < firstStart; i++) {
         const child = children[i];
         if (['INSERTION', 'WARNING', 'PGBRK', 'TITLE'].includes(child.tagName)) continue;
         statements.fsHeader.push(child);
