@@ -330,6 +330,21 @@ function writeFinancialStatementSheet(wb, sheetName, elements, colStart) {
                 const tableData = parseTable(t);
                 row = writeParsedTable(ws, tableData, row, colStart);
             }
+        } else if (tag === 'INSERTION') {
+            // INSERTION → LIBRARY → TABLE-GROUP/TABLE 구조 (일반기업회계기준)
+            const lib = findChild(elem, 'LIBRARY');
+            const searchIn = lib || elem;
+            for (const tg of findChildren(searchIn, 'TABLE-GROUP')) {
+                for (const t of findChildren(tg, 'TABLE')) {
+                    const tableData = parseTable(t);
+                    row = writeParsedTable(ws, tableData, row, colStart);
+                }
+            }
+            // TABLE-GROUP 밖의 직접 TABLE (각주 등)
+            for (const t of findChildren(searchIn, 'TABLE')) {
+                const tableData = parseTable(t);
+                row = writeParsedTable(ws, tableData, row, colStart);
+            }
         }
     }
 

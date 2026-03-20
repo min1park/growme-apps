@@ -327,35 +327,68 @@ function splitFinancialStatements(fsSection) {
         return null;
     }
 
-    // BORDER=1 TABLE 또는 TABLE-GROUP 내 BORDER=1 TABLE 위치 찾기
+    // TABLE-GROUP에서 재무제표 유형과 데이터를 추출하는 헬퍼
+    function tryExtractFromTableGroup(tg) {
+        let fsType = detectFsTypeByAclass(tg.getAttribute('ACLASS'));
+        const tables = findChildren(tg, 'TABLE');
+        let dataTable = null;
+        for (const t of tables) {
+            if (t.getAttribute('BORDER') === '1') {
+                dataTable = t;
+                break;
+            }
+        }
+        if (!fsType && tables.length > 0) {
+            fsType = detectFsTypeByTitle(getText(tables[0]));
+        }
+        return { fsType, dataTable };
+    }
+
+    // 재무제표 블록 찾기: 직접 TABLE, TABLE-GROUP, INSERTION 내부 모두 탐색
     const fsBlocks = []; // { type, start, end }
 
     for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        let dataTable = null;
         let fsType = null;
 
         if (child.tagName === 'TABLE-GROUP') {
-            // TABLE-GROUP: ACLASS로 유형 판별, 내부 BORDER=1 TABLE 사용
-            fsType = detectFsTypeByAclass(child.getAttribute('ACLASS'));
-            const tables = findChildren(child, 'TABLE');
-            for (const t of tables) {
-                if (t.getAttribute('BORDER') === '1') {
-                    dataTable = t;
+            // 직접 자식 TABLE-GROUP
+            const { fsType: ft, dataTable } = tryExtractFromTableGroup(child);
+            if (dataTable && ft) {
+                fsBlocks.push({ type: ft, start: i, end: i });
+            }
+        } else if (child.tagName === 'INSERTION') {
+            // INSERTION → LIBRARY → TABLE-GROUP 구조 (일반기업회계기준)
+            const lib = findChild(child, 'LIBRARY');
+            const searchIn = lib || child;
+            const tableGroups = findChildren(searchIn, 'TABLE-GROUP');
+            for (const tg of tableGroups) {
+                const { fsType: ft, dataTable } = tryExtractFromTableGroup(tg);
+                if (dataTable && ft) {
+                    fsBlocks.push({ type: ft, start: i, end: i });
                     break;
                 }
             }
-            // ACLASS로 못 찾으면 내부 텍스트로 시도
-            if (!fsType && tables.length > 0) {
-                fsType = detectFsTypeByTitle(getText(tables[0]));
-            }
-            if (dataTable && fsType) {
-                fsBlocks.push({ type: fsType, start: i, end: i });
+            // INSERTION 내에 TABLE-GROUP 없이 직접 TABLE이 있는 경우
+            if (!fsBlocks.some(b => b.start === i)) {
+                const tables = searchIn.querySelectorAll
+                    ? Array.from(searchIn.querySelectorAll('TABLE[BORDER="1"]'))
+                    : [];
+                for (const t of tables) {
+                    const aclass = t.getAttribute('ACLASS') || '';
+                    if (aclass === 'FINANCE') {
+                        // 부모 TABLE-GROUP 또는 INSERTION 텍스트로 유형 판별
+                        fsType = detectFsTypeByTitle(getText(searchIn));
+                        if (fsType) {
+                            fsBlocks.push({ type: fsType, start: i, end: i });
+                            break;
+                        }
+                    }
+                }
             }
         } else if (child.tagName === 'TABLE' && child.getAttribute('BORDER') === '1') {
             // 직접 TABLE: 기존 로직
-            dataTable = child;
-            const thead = findChild(dataTable, 'THEAD');
+            const thead = findChild(child, 'THEAD');
             if (!thead) continue;
 
             // 바로 앞 요소에서 제목 찾기
