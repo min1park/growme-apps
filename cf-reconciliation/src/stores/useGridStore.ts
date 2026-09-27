@@ -3,6 +3,8 @@ import { Account, CoAMapping, CellKey, CellValue, ValidationResult, makeCellKey,
 import { CFItem } from '@/types/cf-template';
 import { KIFRS_CF_TEMPLATE, getAllCFItems } from '@/data/cf-template-kifrs';
 import { validateGrid, getSubtotalAmount } from '@/engines/validation';
+import { autoAllocate, AllocationResult } from '@/engines/allocation';
+import { matchCompanyCF, verifySummary, CompanyCFLine, VerifyRow } from '@/engines/verify';
 
 interface GridState {
   accounts: Account[];
@@ -35,6 +37,14 @@ interface GridState {
   setShowNonCash: (show: boolean) => void;
 
   revalidate: () => void;
+
+  // ── 자동배분 / 검증대사 (2026-07 개선) ──
+  lastAllocation: AllocationResult | null;
+  companyCF: CompanyCFLine[] | null;
+  verifyRows: VerifyRow[] | null;
+  autoAllocateGrid: () => AllocationResult;
+  loadCompanyCF: (lines: CompanyCFLine[]) => void;
+  clearCompanyCF: () => void;
 
   getCFAmount: (cfItemId: string) => number;
   getSubtotal: (subtotalId: string) => number;
@@ -83,6 +93,10 @@ export const useGridStore = create<GridState>((set, get) => ({
   collapsedSections: new Set(),
   showNonCash: true,
   columnOrder: null,
+
+  lastAllocation: null,
+  companyCF: null,
+  verifyRows: null,
 
   undoStack: [],
   redoStack: [],
@@ -143,7 +157,37 @@ export const useGridStore = create<GridState>((set, get) => ({
     if (state.accounts.length === 0) return;
     const validation = validateGrid(state.accounts, state.cfItems, state.mappings, state.gridData);
     set({ validation });
+    // 회사CF 대사가 로드돼 있으면 함께 갱신
+    if (state.companyCF) {
+      const appAmounts = new Map<string, number>();
+      for (const item of state.cfItems) {
+        appAmounts.set(item.id, getSubtotalAmount(item.id, state.cfItems, state.accounts, state.gridData));
+      }
+      set({ verifyRows: matchCompanyCF(state.companyCF, state.cfItems, appAmounts) });
+    }
   },
+
+  /** 자동배분: 계정별 증감을 CF라인에 프리필. 기존 gridData를 덮어씀. */
+  autoAllocateGrid: () => {
+    const state = get();
+    const itemIds = new Set(state.cfItems.map(i => i.id));
+    const result = autoAllocate(state.accounts, state.mappings, itemIds);
+    set({
+      gridData: new Map(result.gridData),
+      lastAllocation: result,
+      undoStack: [],
+      redoStack: [],
+    });
+    get().revalidate();
+    return result;
+  },
+
+  loadCompanyCF: (lines) => {
+    set({ companyCF: lines });
+    get().revalidate();
+  },
+
+  clearCompanyCF: () => set({ companyCF: null, verifyRows: null }),
 
   getCFAmount: (cfItemId) => {
     const state = get();

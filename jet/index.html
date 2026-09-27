@@ -28,11 +28,12 @@
         <ul class="step-list">
             <li id="step-indicator-1" class="step-item active">① 분개장 업로드</li>
             <li id="step-indicator-2" class="step-item">② 필드 매핑</li>
-            <li id="step-indicator-3" class="step-item">③ 기초잔액 업로드</li>
-            <li id="step-indicator-4" class="step-item">④ 데이터 검증</li>
-            <li id="step-indicator-5" class="step-item">⑤ 산출물 확인</li>
-            <li id="step-indicator-6" class="step-item">⑥ 이상분개 탐지</li>
-            <li id="step-indicator-7" class="step-item">⑦ 리포트 다운로드</li>
+            <li id="step-indicator-3" class="step-item">③ CoA 계정체계 (선택)</li>
+            <li id="step-indicator-4" class="step-item">④ 기초잔액 업로드</li>
+            <li id="step-indicator-5" class="step-item">⑤ 데이터 검증</li>
+            <li id="step-indicator-6" class="step-item">⑥ 산출물 확인</li>
+            <li id="step-indicator-7" class="step-item">⑦ 이상분개 탐지</li>
+            <li id="step-indicator-8" class="step-item">⑧ 리포트 다운로드</li>
         </ul>
         <button class="btn btn-reset" onclick="resetAll()">🔄 처음부터 다시</button>
     </aside>
@@ -95,9 +96,55 @@
             </button>
         </section>
 
-        <!-- ── Step 3: 기초잔액 업로드 ───────────────── -->
+        <!-- ── Step 3: CoA 계정체계 매핑 (선택) ───────── -->
         <section id="step-3" class="step-section">
-            <h2>③ 기초잔액 업로드 (B/S 계정)</h2>
+            <h2>③ CoA 계정체계 매핑 (선택)</h2>
+            <div class="info-box info">
+                계정과목 ↔ 코드 ↔ 계층(대구분/중구분/공시단위/연결CoA) 매핑표를 업로드하면,
+                가공원장·증감표·리포트에 <strong>CoA 계층 컬럼</strong>이 자동 부착됩니다.
+                계정과목명에 <code>(제조)/(판관)</code> 같은 접미사가 있어도 자동 매칭합니다.
+                <br>이 단계는 <strong>선택</strong>입니다 — 건너뛰면 CoA 계층 없이 진행됩니다.
+            </div>
+            <div class="radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="use-coa" value="yes" checked
+                           onchange="toggleCoAUpload()">
+                    예, CoA 매핑표가 있습니다
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="use-coa" value="no"
+                           onchange="toggleCoAUpload()">
+                    아니오, CoA 없이 진행합니다
+                </label>
+            </div>
+            <div id="coa-upload-section">
+                <div class="upload-area" id="coa-upload-area">
+                    <div class="upload-icon">📁</div>
+                    <p>CoA 매핑표 파일을 업로드하세요</p>
+                    <p class="upload-hint">계정과목·코드·계층이 담긴 Excel/CSV</p>
+                    <input type="file" id="coa-file-input"
+                           accept=".xlsx,.xls,.csv" onchange="handleCoAUpload(this)">
+                    <label for="coa-file-input" class="btn btn-upload">파일 선택</label>
+                </div>
+                <div id="coa-preview" class="hidden">
+                    <div class="info-box success" id="coa-load-info"></div>
+                    <h3>CoA 매핑표 필드 지정</h3>
+                    <div class="mapping-grid" id="coa-mapping"></div>
+                    <button class="btn btn-primary" onclick="applyCoAAndNext()">
+                        CoA 적용 및 다음 →
+                    </button>
+                </div>
+            </div>
+            <div id="coa-skip-section" class="hidden">
+                <button class="btn btn-primary" onclick="skipCoA()">
+                    CoA 없이 계속 →
+                </button>
+            </div>
+        </section>
+
+        <!-- ── Step 4: 기초잔액 업로드 ───────────────── -->
+        <section id="step-4" class="step-section">
+            <h2>④ 기초잔액 업로드 (B/S 계정)</h2>
             <div class="radio-group">
                 <label class="radio-label">
                     <input type="radio" name="use-bb" value="yes" checked 
@@ -134,20 +181,20 @@
             </div>
         </section>
 
-        <!-- ── Step 4: 데이터 검증 ───────────────────── -->
-        <section id="step-4" class="step-section">
-            <h2>④ 데이터 완전성 검증</h2>
+        <!-- ── Step 5: 데이터 검증 ───────────────────── -->
+        <section id="step-5" class="step-section">
+            <h2>⑤ 데이터 완전성 검증</h2>
             <div id="validation-results"></div>
             <h3>📊 데이터 요약</h3>
             <div class="metrics-grid" id="data-summary-metrics"></div>
-            <button class="btn btn-primary" onclick="goToStep(5)">
+            <button class="btn btn-primary" onclick="goToStep(6)">
                 다음: 산출물 확인 →
             </button>
         </section>
 
-        <!-- ── Step 5: 산출물 확인 ───────────────────── -->
-        <section id="step-5" class="step-section">
-            <h2>⑤ 산출물 확인</h2>
+        <!-- ── Step 6: 산출물 확인 ───────────────────── -->
+        <section id="step-6" class="step-section">
+            <h2>⑥ 산출물 확인</h2>
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab(this, 'tab-account')">
                     📋 계정별 증감표
@@ -193,14 +240,14 @@
                 <p class="hint">💡 다운로드된 파일에는 자동필터가 적용되어 있으며, 
                    전기이월 행은 노란색 배경으로 구분됩니다.</p>
             </div>
-            <button class="btn btn-primary" onclick="goToStep(6)">
+            <button class="btn btn-primary" onclick="goToStep(7)">
                 다음: 이상분개 탐지 →
             </button>
         </section>
 
-        <!-- ── Step 6: 이상분개 탐지 ─────────────────── -->
-        <section id="step-6" class="step-section">
-            <h2>⑥ 이상 분개 탐지 (Journal Entry Testing)</h2>
+        <!-- ── Step 7: 이상분개 탐지 ─────────────────── -->
+        <section id="step-7" class="step-section">
+            <h2>⑦ 이상 분개 탐지 (Journal Entry Testing)</h2>
             <h3>🔧 테스트 설정</h3>
             <div class="config-grid">
                 <div class="config-group">
@@ -276,16 +323,42 @@
             </div>
         </section>
 
-        <!-- ── Step 7: 리포트 다운로드 ───────────────── -->
-        <section id="step-7" class="step-section">
-            <h2>⑦ 리포트 다운로드</h2>
-            <button class="btn btn-download btn-full" onclick="downloadFullReport()">
-                📥 저널엔트리테스트 전체 결과 다운로드 (.xlsx)
-            </button>
-            <p class="hint">검증결과, 계정별증감표, 월별증감표, 이상분개 요약 및 상세 내역이 
-               모두 포함된 엑셀 파일입니다.</p>
+        <!-- ── Step 8: 리포트 다운로드 ───────────────── -->
+        <section id="step-8" class="step-section">
+            <h2>⑧ 리포트 다운로드</h2>
+            <div class="info-box info">
+                산출물을 개별 엑셀로 받거나, 모든 시트를 묶은 <strong>통합 1파일</strong>로 받을 수 있습니다.
+            </div>
+            <h3>📥 개별 다운로드</h3>
+            <div class="config-grid">
+                <div class="config-group">
+                    <h4>원장·증감표</h4>
+                    <button class="btn btn-download" onclick="downloadProcessedLedger()">
+                        📂 가공원장 (원본전체+가공+CoA)
+                    </button>
+                    <button class="btn btn-download" onclick="downloadSummaries()">
+                        📋 계정별·월별 증감표
+                    </button>
+                </div>
+                <div class="config-group">
+                    <h4>JET·검증</h4>
+                    <button class="btn btn-download" onclick="downloadJetResult()">
+                        🔍 이상분개(JET) 결과
+                    </button>
+                    <button class="btn btn-download" onclick="downloadValidation()">
+                        ✅ 데이터 검증결과
+                    </button>
+                </div>
+            </div>
             <hr>
-            <p class="footer-text">Journal Entry Testing Automation System — v1.0</p>
+            <h3>📦 통합 다운로드</h3>
+            <button class="btn btn-download btn-full" onclick="downloadFullReport()">
+                📥 전체 결과 통합 1파일 다운로드 (.xlsx)
+            </button>
+            <p class="hint">가공원장·검증결과·계정별/월별 증감표·이상분개 요약·상세 내역이
+               모두 시트로 포함된 단일 엑셀 파일입니다.</p>
+            <hr>
+            <p class="footer-text">Journal Entry Testing Automation System — v2.0 (범용/CoA)</p>
             <p class="footer-text">© 2026 회계 밖 세상 (growme.kr)</p>
         </section>
 
@@ -302,6 +375,7 @@
 
 <!-- JavaScript 모듈 -->
 <script src="js/dataProcessor.js"></script>
+<script src="js/coaMapper.js"></script>
 <script src="js/validation.js"></script>
 <script src="js/anomalyDetector.js"></script>
 <script src="js/reportGenerator.js"></script>

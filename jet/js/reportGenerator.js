@@ -3,12 +3,17 @@
  */
 const ReportGenerator = {
 
+    // CoA 계층 사용 여부
+    _hasCoA() { return typeof CoAMapper !== 'undefined' && CoAMapper.enabled; },
+
     // ── 계정별 증감표 ──────────────────────────────────
     createAccountDCSummary(data) {
         const map = {};
         data.forEach(r => {
             const key = r.account_code + '||' + r.account_name;
             if (!map[key]) map[key] = { code: r.account_code, name: r.account_name,
+                                         major: r.coa_major||'', middle: r.coa_middle||'',
+                                         unit: r.coa_unit||'', coa: r.coa_name||'',
                                          전기이월: 0, 차변: 0, 대변: 0 };
             const dc = r.dc_type || '';
             if (dc === '전기이월') {
@@ -20,12 +25,21 @@ const ReportGenerator = {
             }
         });
 
-        const rows = Object.values(map).sort((a, b) => a.code < b.code ? -1 : 1);
+        // CoA 있으면 대분류(자산1부채2자본3수익4비용5) → 코드 순 정렬
+        const ORD = {'자산':1,'부채':2,'자본':3,'수익':4,'비용':5,'영업외손익':6};
+        const rows = Object.values(map).sort((a, b) => {
+            if (this._hasCoA()) {
+                const oa = ORD[a.major]||9, ob = ORD[b.major]||9;
+                if (oa !== ob) return oa - ob;
+            }
+            return a.code < b.code ? -1 : 1;
+        });
         rows.forEach(r => {
             r.기말 = (r.전기이월 || 0) + (r.차변 || 0) - (r.대변 || 0);
         });
 
-        const total = { code: '총합계', name: '', 전기이월: 0, 차변: 0, 대변: 0, 기말: 0 };
+        const total = { code: '총합계', name: '', major:'', middle:'', unit:'', coa:'',
+                        전기이월: 0, 차변: 0, 대변: 0, 기말: 0 };
         rows.forEach(r => {
             total.전기이월 += r.전기이월 || 0;
             total.차변 += r.차변 || 0;
@@ -76,8 +90,13 @@ const ReportGenerator = {
     generateProcessedLedgerExcel(data) {
         const wb = XLSX.utils.book_new();
 
+        const hasCoA = this._hasCoA();
+        // CoA 계층 (있을 때만, 맨 앞)
+        const coaHeaders = hasCoA
+            ? ['대구분','중구분','공시단위CoA','연결CoA코드','연결CoA'] : [];
         // 가공 필드 (고정)
-        const processedHeaders = ['회계일','전표번호','계정과목코드','계정과목','차변금액','대변금액',
+        const processedHeaders = [...coaHeaders,
+                        '회계일','전표번호','계정과목코드','계정과목','차변금액','대변금액',
                         '증감','차대구분','월','적요','기표자','승인자','요일'];
 
         // 원본 컬럼 수집 (_raw가 있는 행에서)
@@ -94,7 +113,11 @@ const ReportGenerator = {
         const wsData = [headers];
 
         data.forEach(r => {
+            const coaCells = hasCoA
+                ? [r.coa_major||'', r.coa_middle||'', r.coa_unit||'', r.coa_code||'', r.coa_name||'']
+                : [];
             const processedRow = [
+                ...coaCells,
                 r.date instanceof Date ? DataProcessor.formatDate(r.date) : (r.date || ''),
                 r.entry_no || '',
                 r.account_code || '',
@@ -122,10 +145,12 @@ const ReportGenerator = {
         });
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        const colWidths = [
+        const colWidths = [];
+        if (hasCoA) { colWidths.push({wch:8},{wch:12},{wch:16},{wch:14},{wch:16}); }
+        colWidths.push(
             {wch:12},{wch:28},{wch:16},{wch:30},{wch:18},{wch:18},
             {wch:18},{wch:10},{wch:6},{wch:45},{wch:10},{wch:10},{wch:10}
-        ];
+        );
         if (rawCols.length > 0) {
             colWidths.push({wch:3}); // 구분 열
             rawCols.forEach(() => colWidths.push({wch:18}));
@@ -136,88 +161,141 @@ const ReportGenerator = {
         return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     },
 
-    // ── 엑셀 파일 생성: 전체 리포트 ────────────────────
-    generateFullReportExcel(accountSummary, monthlySummary, validationResults,
-                            anomalySummary, anomalyDetails) {
-        const wb = XLSX.utils.book_new();
+    // ── 시트 헬퍼: 검증결과 ──
+    _sheetValidation(wb, validationResults) {
+        if (!validationResults || !validationResults.length) return;
+        const wsData = [['테스트','상태','메시지','상세']];
+        validationResults.forEach(r => {
+            const icon = r.status==='success'?'✅ 통과':r.status==='error'?'❌ 오류':'⚠️ 경고';
+            wsData.push([r.test, icon, r.message, r.detail]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{wch:20},{wch:12},{wch:50},{wch:50}];
+        XLSX.utils.book_append_sheet(wb, ws, '검증결과');
+    },
 
-        // 1. 검증 결과
-        if (validationResults && validationResults.length > 0) {
-            const wsData = [['테스트','상태','메시지','상세']];
-            validationResults.forEach(r => {
-                const statusIcon = r.status === 'success' ? '✅ 통과' :
-                                   r.status === 'error' ? '❌ 오류' : '⚠️ 경고';
-                wsData.push([r.test, statusIcon, r.message, r.detail]);
-            });
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{wch:20},{wch:12},{wch:50},{wch:50}];
-            XLSX.utils.book_append_sheet(wb, ws, '검증결과');
-        }
-
-        // 2. 계정별 증감표
-        if (accountSummary && accountSummary.length > 0) {
-            const wsData = [['계정과목코드','계정과목','전기이월','차변','대변','기말']];
-            accountSummary.forEach(r => {
+    // ── 시트 헬퍼: 계정별 증감표 (CoA 반영) ──
+    _sheetAccountSummary(wb, accountSummary) {
+        if (!accountSummary || !accountSummary.length) return;
+        const hasCoA = this._hasCoA();
+        const head = hasCoA
+            ? ['대구분','중구분','공시단위CoA','연결CoA','계정과목코드','계정과목',
+               '기초(전기이월)','당기차변','당기대변','증감','기말잔액']
+            : ['계정과목코드','계정과목','전기이월','차변','대변','기말'];
+        const wsData = [head];
+        accountSummary.forEach(r => {
+            if (hasCoA) {
+                wsData.push([r.major||'', r.middle||'', r.unit||'', r.coa||'',
+                    r.code, r.name, r.전기이월||0, r.차변||0, r.대변||0,
+                    (r.차변||0)-(r.대변||0), r.기말||0]);
+            } else {
                 wsData.push([r.code, r.name, r.전기이월||0, r.차변||0, r.대변||0, r.기말||0]);
-            });
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{wch:16},{wch:30},{wch:18},{wch:18},{wch:18},{wch:18}];
-            XLSX.utils.book_append_sheet(wb, ws, '계정별증감표');
-        }
+            }
+        });
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = hasCoA
+            ? [{wch:8},{wch:12},{wch:16},{wch:16},{wch:16},{wch:26},
+               {wch:18},{wch:18},{wch:18},{wch:18},{wch:18}]
+            : [{wch:16},{wch:30},{wch:18},{wch:18},{wch:18},{wch:18}];
+        XLSX.utils.book_append_sheet(wb, ws, '계정별증감표');
+    },
 
-        // 3. 월별 증감표
-        if (monthlySummary) {
-            const { rows, months } = monthlySummary;
-            const headers = ['계정과목코드', '계정과목'];
-            months.forEach(m => headers.push(m === 0 ? '전기이월' : `${m}월`));
-            headers.push('총합계');
+    // ── 시트 헬퍼: 월별 증감표 (CoA 반영) ──
+    _sheetMonthlySummary(wb, monthlySummary) {
+        if (!monthlySummary) return;
+        const { rows, months } = monthlySummary;
+        const hasCoA = this._hasCoA();
+        const headers = hasCoA ? ['대구분','계정과목코드','계정과목'] : ['계정과목코드','계정과목'];
+        months.forEach(m => headers.push(m === 0 ? '전기이월' : `${m}월`));
+        headers.push('총합계');
+        const wsData = [headers];
+        rows.forEach(r => {
+            const row = hasCoA ? [r.major||'', r.code, r.name] : [r.code, r.name];
+            months.forEach(m => row.push(r[`m${m}`] || 0));
+            row.push(r.총합계 || 0);
+            wsData.push(row);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        const lead = hasCoA ? [{wch:8},{wch:16},{wch:26}] : [{wch:16},{wch:30}];
+        ws['!cols'] = [...lead, ...months.map(()=>({wch:16})), {wch:16}];
+        XLSX.utils.book_append_sheet(wb, ws, '월별증감표');
+    },
 
-            const wsData = [headers];
-            rows.forEach(r => {
-                const row = [r.code, r.name];
-                months.forEach(m => row.push(r[`m${m}`] || 0));
-                row.push(r.총합계 || 0);
-                wsData.push(row);
-            });
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{wch:16},{wch:30}, ...months.map(()=>({wch:16})), {wch:16}];
-            XLSX.utils.book_append_sheet(wb, ws, '월별증감표');
-        }
-
-        // 4. 이상분개 요약
-        if (anomalySummary && anomalySummary.length > 0) {
+    // ── 시트 헬퍼: 이상분개 요약+상세 ──
+    _sheetAnomaly(wb, anomalySummary, anomalyDetails) {
+        if (anomalySummary && anomalySummary.length) {
             const wsData = [['테스트 항목','탐지 건수','비율(%)','상태']];
-            anomalySummary.forEach(r => {
-                wsData.push([r.name, r.count, r.pct, r.status]);
-            });
+            anomalySummary.forEach(r => wsData.push([r.name, r.count, r.pct, r.status]));
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             ws['!cols'] = [{wch:25},{wch:12},{wch:10},{wch:15}];
             XLSX.utils.book_append_sheet(wb, ws, '이상분개_요약');
         }
-
-        // 5. 이상분개 상세
         if (anomalyDetails) {
+            const hasCoA = this._hasCoA();
             for (const [testName, items] of Object.entries(anomalyDetails)) {
-                if (items.length === 0) continue;
-                const sheetName = testName.replace(/[\/\\*?\[\]:]/g, '_').substring(0, 31);
-                const headers = ['회계일','전표번호','계정코드','계정명',
-                               '차변','대변','증감','적요','기표자','승인자','탐지사유'];
+                if (!items || items.length === 0) continue;
+                const sheetName = testName.replace(/[\/\\*?\[\]:]/g,'_').substring(0,31);
+                const headers = (hasCoA?['대구분']:[]).concat(
+                    ['회계일','전표번호','계정코드','계정명','차변','대변','증감',
+                     '적요','기표자','승인자','탐지사유']);
                 const wsData = [headers];
                 items.forEach(r => {
-                    wsData.push([
+                    const lead = hasCoA ? [r.coa_major||''] : [];
+                    wsData.push([...lead,
                         r.date instanceof Date ? DataProcessor.formatDate(r.date) : '',
-                        r.entry_no || '', r.account_code || '', r.account_name || '',
-                        r.debit || 0, r.credit || 0, r.net_amount || 0,
-                        r.description || '', r.preparer || '', r.approver || '',
-                        r.test_reason || ''
-                    ]);
+                        r.entry_no||'', r.account_code||'', r.account_name||'',
+                        r.debit||0, r.credit||0, r.net_amount||0,
+                        r.description||'', r.preparer||'', r.approver||'', r.test_reason||'']);
                 });
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
-                ws['!cols'] = [{wch:12},{wch:25},{wch:15},{wch:25},
-                              {wch:18},{wch:18},{wch:18},{wch:40},{wch:10},{wch:10},{wch:20}];
                 XLSX.utils.book_append_sheet(wb, ws, sheetName);
             }
         }
+    },
+
+    // ── 개별: 증감표만 ──
+    generateSummariesExcel(accountSummary, monthlySummary) {
+        const wb = XLSX.utils.book_new();
+        this._sheetAccountSummary(wb, accountSummary);
+        this._sheetMonthlySummary(wb, monthlySummary);
+        return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    },
+
+    // ── 개별: JET 결과만 ──
+    generateJetExcel(anomalySummary, anomalyDetails) {
+        const wb = XLSX.utils.book_new();
+        this._sheetAnomaly(wb, anomalySummary, anomalyDetails);
+        if (wb.SheetNames.length === 0) {
+            const ws = XLSX.utils.aoa_to_sheet([['탐지된 이상분개가 없습니다.']]);
+            XLSX.utils.book_append_sheet(wb, ws, '결과');
+        }
+        return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    },
+
+    // ── 개별: 검증결과만 ──
+    generateValidationExcel(validationResults) {
+        const wb = XLSX.utils.book_new();
+        this._sheetValidation(wb, validationResults);
+        return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    },
+
+    // ── 엑셀 파일 생성: 전체 리포트(통합) ──────────────
+    generateFullReportExcel(accountSummary, monthlySummary, validationResults,
+                            anomalySummary, anomalyDetails, ledgerData) {
+        const wb = XLSX.utils.book_new();
+
+        // 1. 가공원장 (원본전체+가공+CoA) — 통합파일 첫 시트
+        if (ledgerData && ledgerData.length) {
+            const buf = this.generateProcessedLedgerExcel(ledgerData);
+            const lwb = XLSX.read(buf, { type: 'array' });
+            const lws = lwb.Sheets['가공원장'];
+            if (lws) XLSX.utils.book_append_sheet(wb, lws, '가공원장');
+        }
+        // 2~5
+        this._sheetValidation(wb, validationResults);
+        this._sheetAccountSummary(wb, accountSummary);
+        this._sheetMonthlySummary(wb, monthlySummary);
+        this._sheetAnomaly(wb, anomalySummary, anomalyDetails);
 
         return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     },

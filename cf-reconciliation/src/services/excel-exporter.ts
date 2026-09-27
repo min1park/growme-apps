@@ -257,33 +257,53 @@ export async function exportToExcel(
     return bs === 'current-asset' || bs === 'noncurrent-asset';
   };
 
-  // 현금 계정과 손익 계정 제외 (정산 대상이 아님 — 손익은 당기순이익→이익잉여금 경로로 반영)
-  // BS분류 순서 + 계정코드 오름차순 정렬
-  const gridAccounts = sortAccounts(
+  // 손익 계정만 제외 (당기순이익→이익잉여금 경로로 반영).
+  // 현금 계정은 "별도 열"로 매트릭스 맨 끝에 배치 — 배분 대상은 아니지만
+  //   증감(=CF순증감 기여)을 한눈에 보이도록 표시한다. (2026-07 개선)
+  const isCashAccount = (id: string) => mappingMap.get(id)?.cfCategory === 'cash';
+
+  const nonCashAccounts = sortAccounts(
     accounts.filter(a => {
       const m = mappingMap.get(a.id);
       return m?.cfCategory !== 'cash' && m?.bsCategory !== 'income-statement';
     }),
     mappingMap,
   );
+  const cashAccounts = sortAccounts(
+    accounts.filter(a => isCashAccount(a.id)),
+    mappingMap,
+  );
+  // 정산 대상(비현금 BS계정) + 현금계정을 뒤에 이어붙임
+  const gridAccounts = [...nonCashAccounts, ...cashAccounts];
 
   // 레이아웃 상수 (A=검증, B=참조금액, C=출처, D=CF항목, E=CF금액, F+계정과목)
   const ACCT_COL_START = 6; // F열부터 계정과목 (1-based)
   const CF_ROW_START = 6;   // 6행부터 CF항목
   const SUM_ROW = CF_ROW_START + cfItems.length; // CF항목 다음 행 = 합계
 
-  // ── Row 1: 헤더 ──
-  const r1 = ws.addRow(['검증', '참조금액', '출처', 'CF항목', 'CF금액', ...gridAccounts.map(a => a.name)]);
-  r1.font = { bold: true };
-  r1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
-  r1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  r1.alignment = { horizontal: 'center' };
+  const cashStartIdx = nonCashAccounts.length; // 이 인덱스부터 현금 계정(별도 열)
+  const isCashCol = (i: number) => i >= cashStartIdx;
 
-  // ── Row 2: 검증 (증감 + SUM(CF항목) = 0이면 배분 완료) ──
-  const r2 = ws.addRow(['', '', '', '검증', '']);
+  // ── Row 1: 헤더 ── (현금 열은 '(현금)' 접미사)
+  const r1 = ws.addRow(['검증', '참조금액', '출처', 'CF항목', 'CF금액',
+    ...gridAccounts.map((a, i) => isCashCol(i) ? `${a.name}(현금)` : a.name)]);
+  r1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  r1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+  r1.alignment = { horizontal: 'center' };
+  // 현금 열 헤더는 청록색으로 구분
+  for (let i = cashStartIdx; i < gridAccounts.length; i++) {
+    r1.getCell(ACCT_COL_START + i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B5FA8' } };
+  }
+
+  // ── Row 2: 검증 ──
+  //   비현금 열: 증감 + SUM(CF항목) = 0 이면 배분완료
+  //   현금 열: 배분대상 아님 → 증감(=CF순증감 기여)을 그대로 표시
+  const r2 = ws.addRow(['', '', '', '검증(현금열=순증감)', '']);
   for (let i = 0; i < gridAccounts.length; i++) {
     const c = colLetter(ACCT_COL_START + i);
-    r2.getCell(ACCT_COL_START + i).value = { formula: `${c}5+${c}${SUM_ROW}` } as ExcelJS.CellFormulaValue;
+    r2.getCell(ACCT_COL_START + i).value = isCashCol(i)
+      ? ({ formula: `${c}5` } as ExcelJS.CellFormulaValue)          // 현금: 증감 그대로
+      : ({ formula: `${c}5+${c}${SUM_ROW}` } as ExcelJS.CellFormulaValue); // 비현금: 검증
   }
 
   // ── Row 3: 전기말 (기초잔액) ──
@@ -302,6 +322,67 @@ export async function exportToExcel(
     r5.getCell(ACCT_COL_START + i).value = { formula } as ExcelJS.CellFormulaValue;
   }
   r5.font = { bold: true };
+
+  // ── 잔액 무결성 검증 (BS 항등식): 자산 = 부채 + 자본 ──
+  //   계정 열들 오른쪽에 자산총계/부채총계/자본총계/차이 4개 열 추가.
+  //   전기말(3행)·당기말(4행) 각각 자산-부채-자본=0 이어야 잔액이 제대로 입력된 것.
+  const bsCatOf = (id: string): 'asset' | 'liability' | 'equity' | 'other' => {
+    const bs = mappingMap.get(id)?.bsCategory;
+    if (bs === 'current-asset' || bs === 'noncurrent-asset') return 'asset';
+    if (bs === 'current-liability' || bs === 'noncurrent-liability') return 'liability';
+    if (bs === 'equity') return 'equity';
+    return 'other';
+  };
+  // 각 카테고리의 열문자 목록 (기말잔액 4행 기준 SUM 대상)
+  const colsByCat = { asset: [] as string[], liability: [] as string[], equity: [] as string[] };
+  gridAccounts.forEach((a, i) => {
+    const cat = bsCatOf(a.id);
+    if (cat === 'asset' || cat === 'liability' || cat === 'equity') {
+      colsByCat[cat].push(colLetter(ACCT_COL_START + i));
+    }
+  });
+  const VERIFY_COL0 = ACCT_COL_START + gridAccounts.length + 1; // 계정 열 다음 한 칸 띄고
+  const catHeaders = ['자산', '부채', '자본', '차이'];
+  catHeaders.forEach((h, i) => {
+    const cell = r1.getCell(VERIFY_COL0 + i);
+    cell.value = h;
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } };
+    cell.alignment = { horizontal: 'center' };
+  });
+  // 전기말(3), 당기말(4) 행에 총계·차이 수식
+  const sumOrZero = (cols: string[], row: number) =>
+    cols.length ? `SUM(${cols.map(c => `${c}${row}`).join(',')})` : '0';
+  [3, 4].forEach(row => {
+    const rowObj = row === 3 ? ws.getRow(3) : ws.getRow(4);
+    const aCol = colLetter(VERIFY_COL0);
+    const lCol = colLetter(VERIFY_COL0 + 1);
+    const eCol = colLetter(VERIFY_COL0 + 2);
+    rowObj.getCell(VERIFY_COL0).value = { formula: sumOrZero(colsByCat.asset, row) } as ExcelJS.CellFormulaValue;
+    rowObj.getCell(VERIFY_COL0 + 1).value = { formula: sumOrZero(colsByCat.liability, row) } as ExcelJS.CellFormulaValue;
+    rowObj.getCell(VERIFY_COL0 + 2).value = { formula: sumOrZero(colsByCat.equity, row) } as ExcelJS.CellFormulaValue;
+    // 차이 = 자산 - 부채 - 자본  (0이어야 정상)
+    rowObj.getCell(VERIFY_COL0 + 3).value = {
+      formula: `${aCol}${row}-${lCol}${row}-${eCol}${row}`,
+    } as ExcelJS.CellFormulaValue;
+    for (let i = 0; i < 4; i++) rowObj.getCell(VERIFY_COL0 + i).numFmt = '#,##0;(#,##0);"-"';
+  });
+  // Row 1에 안내
+  r1.getCell(VERIFY_COL0 + 3).note = '자산 = 부채 + 자본 (0이어야 잔액 입력 정상)';
+
+  // ── 조정항목 대사 열 (손익계산서·주석 참조 vs CF금액) ──
+  //   잔액검증 4열 다음 한 칸 띄고: [손익계산서 및 주석] [차이]
+  //   각 CF항목 행에서 referenceData(참조금액)를 표시하고, 차이=CF금액−참조=0 검증.
+  const RECON_COL0 = VERIFY_COL0 + 4 + 1;
+  const reconHeaders = ['손익계산서 및 주석', '차이'];
+  reconHeaders.forEach((h, i) => {
+    const cell = r1.getCell(RECON_COL0 + i);
+    cell.value = h;
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } };
+    cell.alignment = { horizontal: 'center' };
+  });
+  r1.getCell(RECON_COL0 + 1).note = 'CF금액 − 손익/주석 참조 (0이면 일치)';
 
   // ── Pre-compute: CF항목 → Excel 행번호 매핑 ──
   const itemRowMap = new Map<string, number>();
@@ -356,6 +437,19 @@ export async function exportToExcel(
       } else {
         row.getCell(1).value = { formula: `B${rowNum}-E${rowNum}` } as ExcelJS.CellFormulaValue;
       }
+    }
+
+    // ── 오른쪽 대사 열: [손익계산서 및 주석 참조] [차이=CF금액−참조] ──
+    //   참조금액이 있는 조정항목만 표시 (감가상각비·이자·주식보상 등).
+    if (ref && ref.amount !== undefined && ref.amount !== null) {
+      row.getCell(RECON_COL0).value = ref.amount;
+      row.getCell(RECON_COL0).numFmt = '#,##0;(#,##0);"-"';
+      const eCol = colLetter(5);
+      const refCol = colLetter(RECON_COL0);
+      row.getCell(RECON_COL0 + 1).value = {
+        formula: `${eCol}${rowNum}-${refCol}${rowNum}`,   // 차이 = CF금액 − 참조
+      } as ExcelJS.CellFormulaValue;
+      row.getCell(RECON_COL0 + 1).numFmt = '#,##0;(#,##0);"-"';
     }
     if (item.isEditable && item.sectionId === 'noncash') {
       // 비현금 거래: 행 SUM = 0 검증

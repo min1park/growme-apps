@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Stepper } from './Stepper';
 import { StepId } from '@/types';
-import { HomeIcon, SaveIcon } from 'lucide-react';
+import { HomeIcon, SaveIcon, HelpCircleIcon } from 'lucide-react';
+import { HelpDialog } from '@/components/help/HelpDialog';
 
 interface TopBarProps {
   projectName?: string;
@@ -16,6 +17,8 @@ interface TopBarProps {
 }
 
 export function TopBar({ projectName, currentStep, onStepClick, onSave, onHome, hasProject }: TopBarProps) {
+  const [showHelp, setShowHelp] = useState(false);
+
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -50,10 +53,15 @@ export function TopBar({ projectName, currentStep, onStepClick, onSave, onHome, 
             저장
           </Button>
         )}
+        <Button variant="ghost" size="sm" onClick={() => setShowHelp(true)} className="hover:bg-blue-50 text-blue-700" title="사용 가이드">
+          <HelpCircleIcon className="h-4 w-4 mr-1" />
+          도움말
+        </Button>
         <Button variant="ghost" size="icon-sm" onClick={onHome} className="hover:bg-blue-50">
           <HomeIcon className="h-4 w-4" />
         </Button>
       </div>
+      <HelpDialog open={showHelp} onOpenChange={setShowHelp} />
     </header>
   );
 }

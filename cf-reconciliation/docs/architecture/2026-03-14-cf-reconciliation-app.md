@@ -235,7 +235,7 @@ cf-reconciliation/
 
 export interface ProjectMeta {
   id: string;                          // uuid
-  name: string;                        // "샘플 2025 4Q"
+  name: string;                        // "샘플회사 20XX 4Q"
   company: string;                     // "(주)샘플"
   periodStart: string;                 // "2025-01-01"
   periodEnd: string;                   // "2025-12-31"
@@ -907,7 +907,7 @@ Phase 5: 품질 (20분)
 
 ## 12. 참고: 실제 CF정산표 매핑
 
-실제 `CF정산표_샘플` 시트의 열 구조를 앱의 Account 모델로 매핑:
+실제 `CF정산표` 시트의 열 구조를 앱의 Account 모델로 매핑:
 
 ```
 Excel 열 F~EP (약 140개) → Account[] 배열

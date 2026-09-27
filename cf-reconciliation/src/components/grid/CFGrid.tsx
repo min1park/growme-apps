@@ -8,7 +8,7 @@ import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { GridCell } from './GridCell';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDownIcon, DownloadIcon, PlusIcon, XIcon } from 'lucide-react';
+import { ArrowUpDownIcon, DownloadIcon, PlusIcon, XIcon, WandIcon } from 'lucide-react';
 import { exportToExcel } from '@/services/excel-exporter';
 import { CFItem } from '@/types/cf-template';
 import { getSubtotalAmount } from '@/engines/validation';
@@ -141,8 +141,18 @@ export function CFGrid() {
     selectCell, startEditing, stopEditing, setCellValue,
     setShowNonCash, toggleSection, undo, redo,
     addItemToSection, removeItemFromSection, setReferenceData,
-    moveColumn, setColumnOrder,
+    moveColumn, setColumnOrder, autoAllocateGrid, lastAllocation,
   } = useGridStore();
+
+  const handleAutoAllocate = useCallback(() => {
+    const gridFilled = gridData.size > 0;
+    if (gridFilled && !window.confirm('현재 입력값을 덮어쓰고 자동배분하시겠습니까?')) return;
+    const result = autoAllocateGrid();
+    if (result.unallocated.length > 0) {
+      const names = result.unallocated.map(u => u.name).join(', ');
+      window.alert(`자동배분 완료.\n\n미배분(수동 확인 필요) ${result.unallocated.length}건:\n${names}`);
+    }
+  }, [autoAllocateGrid, gridData.size]);
 
   const [addingTo, setAddingTo] = useState<string | null>(null); // parentId for add input
   const [newItemLabel, setNewItemLabel] = useState('');
@@ -287,6 +297,21 @@ export function CFGrid() {
             <ArrowUpDownIcon className="h-3 w-3 mr-1" />
             기본정렬
           </Button>
+        )}
+        <Button
+          variant="default"
+          size="xs"
+          onClick={handleAutoAllocate}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600"
+          title="계정별 증감을 CF라인에 자동 배분합니다 (초안 생성)"
+        >
+          <WandIcon className="h-3 w-3 mr-1" />
+          자동배분
+        </Button>
+        {lastAllocation && lastAllocation.unallocated.length > 0 && (
+          <span className="text-[11px] text-amber-600 font-medium" title={lastAllocation.unallocated.map(u => u.name).join(', ')}>
+            ⚠ 미배분 {lastAllocation.unallocated.length}건
+          </span>
         )}
         <Button variant="outline" size="xs" onClick={handleExport}>
           <DownloadIcon className="h-3 w-3 mr-1" />

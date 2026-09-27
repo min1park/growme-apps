@@ -34,8 +34,9 @@ function goToStep(step) {
 
     // 단계별 진입 시 초기화 동작
     if (step === 2) buildMappingUI();
-    if (step === 4) runValidation();
-    if (step === 5) renderOutputs();
+    if (step === 3) initCoAStep();
+    if (step === 5) runValidation();
+    if (step === 6) renderOutputs();
 
     // 모든 섹션 숨김 후 해당 섹션만 표시
     document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
@@ -215,7 +216,78 @@ function applyMapping() {
 }
 
 // ═══════════════════════════════════════════════════════
-// Step 3: 기초잔액
+// Step 3: CoA 계정체계 매핑 (선택)
+// ═══════════════════════════════════════════════════════
+function initCoAStep() {
+    // 라디오 상태에 맞춰 섹션 표시
+    toggleCoAUpload();
+}
+
+function toggleCoAUpload() {
+    const useYes = document.querySelector('input[name="use-coa"][value="yes"]').checked;
+    document.getElementById('coa-upload-section').classList.toggle('hidden', !useYes);
+    document.getElementById('coa-skip-section').classList.toggle('hidden', useYes);
+}
+
+async function handleCoAUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    showLoading('CoA 매핑표를 읽는 중...');
+    try {
+        const data = await CoAMapper.loadMappingTable(input.files[0]);
+        document.getElementById('coa-load-info').textContent =
+            `✅ CoA 매핑표 로드: ${data.length.toLocaleString()}건, ${CoAMapper.rawColumns.length}개 컬럼`;
+
+        // 필드 지정 UI
+        let html = '';
+        CoAMapper.FIELDS.forEach(f => {
+            const suggested = CoAMapper.suggestColumn(f.key);
+            let opts = '<option value="">(선택안함)</option>';
+            CoAMapper.rawColumns.forEach(col => {
+                const sel = col === suggested ? 'selected' : '';
+                opts += `<option value="${escapeHTML(col)}" ${sel}>${escapeHTML(col)}</option>`;
+            });
+            const label = f.required ? `★ ${escapeHTML(f.label)}` : escapeHTML(f.label);
+            html += `<div class="mapping-item">
+                <label>${label}</label>
+                <select id="coa-map-${escapeHTML(f.key)}">${opts}</select>
+            </div>`;
+        });
+        document.getElementById('coa-mapping').innerHTML = html;
+        document.getElementById('coa-preview').classList.remove('hidden');
+    } catch (err) {
+        alert('CoA 매핑표 로드 오류: ' + err.message);
+    }
+    hideLoading();
+}
+
+function applyCoAAndNext() {
+    const mapping = {};
+    CoAMapper.FIELDS.forEach(f => {
+        mapping[f.key] = document.getElementById(`coa-map-${f.key}`)?.value || '';
+    });
+    if (!mapping.account_name) {
+        alert('최소한 계정과목명 컬럼은 지정해주세요.');
+        return;
+    }
+    showLoading('CoA 매핑 적용 중...');
+    try {
+        const stat = CoAMapper.applyMapping(mapping);
+        hideLoading();
+        alert(`CoA 매핑 완료 — 코드 ${stat.codes}개, 계정과목명 ${stat.names}개 인덱싱`);
+        goToStep(4);
+    } catch (err) {
+        hideLoading();
+        alert('CoA 매핑 오류: ' + err.message);
+    }
+}
+
+function skipCoA() {
+    CoAMapper.reset();
+    goToStep(4);
+}
+
+// ═══════════════════════════════════════════════════════
+// Step 4: 기초잔액
 // ═══════════════════════════════════════════════════════
 function toggleBBUpload() {
     const useYes = document.querySelector('input[name="use-bb"][value="yes"]').checked;
@@ -278,6 +350,7 @@ function applyBBAndCombine() {
             DataProcessor.beginningBalance, bbMapping
         );
         DataProcessor.combineData(DataProcessor.mappedData, bbProcessed);
+        CoAMapper.enrich(DataProcessor.combinedData);   // CoA 계층 부착(있으면)
         // 캐시 초기화
         appState.validationResults = null;
         appState.accountSummary = null;
@@ -285,7 +358,7 @@ function applyBBAndCombine() {
         appState.anomalyResults = null;
         appState.anomalySummary = null;
         hideLoading();
-        goToStep(4);
+        goToStep(5);
     } catch (err) {
         hideLoading();
         alert('기초잔액 처리 오류: ' + err.message);
@@ -295,13 +368,14 @@ function applyBBAndCombine() {
 function skipBBAndCombine() {
     showLoading('데이터 통합 중...');
     DataProcessor.combineData(DataProcessor.mappedData, null);
+    CoAMapper.enrich(DataProcessor.combinedData);       // CoA 계층 부착(있으면)
     appState.validationResults = null;
     appState.accountSummary = null;
     appState.monthlySummary = null;
     appState.anomalyResults = null;
     appState.anomalySummary = null;
     hideLoading();
-    goToStep(4);
+    goToStep(5);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -375,16 +449,22 @@ function renderOutputs() {
 }
 
 function renderAccountSummary(summary) {
-    const headers = ['계정과목코드','계정과목','전기이월','차변','대변','기말'];
+    const hasCoA = typeof CoAMapper !== 'undefined' && CoAMapper.enabled;
+    const headers = hasCoA
+        ? ['대구분','연결CoA','계정과목코드','계정과목','전기이월','차변','대변','기말']
+        : ['계정과목코드','계정과목','전기이월','차변','대변','기말'];
     const rows = summary.map(r => ({
-        cells: [
+        cells: (hasCoA ? [
+            { value: r.major||'', isNum: false },
+            { value: r.coa||'', isNum: false },
+        ] : []).concat([
             { value: r.code, isNum: false },
             { value: r.name, isNum: false },
             { value: DataProcessor.formatNumber(r.전기이월), isNum: true },
             { value: DataProcessor.formatNumber(r.차변), isNum: true },
             { value: DataProcessor.formatNumber(r.대변), isNum: true },
             { value: DataProcessor.formatNumber(r.기말), isNum: true },
-        ]
+        ])
     }));
     document.getElementById('account-summary-table').innerHTML =
         createTable(headers, rows, { totalRow: true });
@@ -456,10 +536,13 @@ function renderCharts(data) {
         options: { responsive: true }
     });
 
-    // 대분류별 기말잔액
+    // 대분류별 기말잔액 (CoA 있으면 coa_major 사용)
+    const hasCoA = typeof CoAMapper !== 'undefined' && CoAMapper.enabled;
     const catMap = {};
     data.forEach(r => {
-        const cat = DataProcessor.classifyAccountCategory(r.account_code);
+        const cat = hasCoA
+            ? (r.coa_major || '기타')
+            : DataProcessor.classifyAccountCategory(r.account_code);
         catMap[cat] = (catMap[cat] || 0) + (r.net_amount || 0);
     });
     const catLabels = Object.keys(catMap);
@@ -566,18 +649,17 @@ function runAnomalyDetection() {
             renderAnomalyResults(results, summary, journal.length);
             document.getElementById('anomaly-results').classList.remove('hidden');
 
-            // Step 7로 전환 — goToStep 사용하지 않고 Step 7만 추가 표시
-            // (Step 6 결과를 유지하면서 Step 7 다운로드 섹션 활성화)
-            currentStep = 7;
-            document.getElementById('step-7').classList.add('active');
+            // Step 8(리포트)로 전환 — Step 7 결과를 유지하면서 다운로드 섹션 활성화
+            currentStep = 8;
+            document.getElementById('step-8').classList.add('active');
             document.querySelectorAll('.step-item').forEach((item, idx) => {
                 item.classList.remove('active', 'completed');
-                if (idx + 1 < 7) item.classList.add('completed');
-                if (idx + 1 === 7) item.classList.add('active');
+                if (idx + 1 < 8) item.classList.add('completed');
+                if (idx + 1 === 8) item.classList.add('active');
             });
 
-            // Step 7 위치로 스크롤
-            document.getElementById('step-7').scrollIntoView({ behavior: 'smooth' });
+            // Step 8 위치로 스크롤
+            document.getElementById('step-8').scrollIntoView({ behavior: 'smooth' });
         } catch (err) {
             alert('이상분개 탐지 오류: ' + err.message);
         }
@@ -644,14 +726,65 @@ function renderAnomalyDetailTable(items) {
 function downloadFullReport() {
     showLoading('엑셀 리포트 생성 중...');
     setTimeout(() => {
+        // 산출물 캐시가 없으면 생성
+        ensureSummaries();
         const buffer = ReportGenerator.generateFullReportExcel(
             appState.accountSummary,
             appState.monthlySummary,
             appState.validationResults,
             appState.anomalySummary,
-            appState.anomalyResults
+            appState.anomalyResults,
+            DataProcessor.combinedData         // 가공원장 시트 포함
         );
-        ReportGenerator.downloadExcel(buffer, '저널엔트리테스트_결과.xlsx');
+        ReportGenerator.downloadExcel(buffer, '저널엔트리테스트_통합결과.xlsx');
+        hideLoading();
+    }, 100);
+}
+
+// 산출물(증감표) 캐시 보장
+function ensureSummaries() {
+    const data = DataProcessor.combinedData;
+    if (!appState.accountSummary)
+        appState.accountSummary = ReportGenerator.createAccountDCSummary(data);
+    if (!appState.monthlySummary)
+        appState.monthlySummary = ReportGenerator.createMonthlySummary(data);
+}
+
+// ── 개별 다운로드 ──
+function downloadSummaries() {
+    showLoading('증감표 엑셀 생성 중...');
+    setTimeout(() => {
+        ensureSummaries();
+        const buffer = ReportGenerator.generateSummariesExcel(
+            appState.accountSummary, appState.monthlySummary);
+        ReportGenerator.downloadExcel(buffer, '증감표_계정별_월별.xlsx');
+        hideLoading();
+    }, 100);
+}
+
+function downloadJetResult() {
+    if (!appState.anomalyResults) {
+        alert('먼저 ⑦ 이상분개 탐지를 실행해주세요.');
+        return;
+    }
+    showLoading('JET 결과 엑셀 생성 중...');
+    setTimeout(() => {
+        const buffer = ReportGenerator.generateJetExcel(
+            appState.anomalySummary, appState.anomalyResults);
+        ReportGenerator.downloadExcel(buffer, '이상분개_JET_결과.xlsx');
+        hideLoading();
+    }, 100);
+}
+
+function downloadValidation() {
+    if (!appState.validationResults) {
+        alert('먼저 ⑤ 데이터 검증을 실행해주세요.');
+        return;
+    }
+    showLoading('검증결과 엑셀 생성 중...');
+    setTimeout(() => {
+        const buffer = ReportGenerator.generateValidationExcel(appState.validationResults);
+        ReportGenerator.downloadExcel(buffer, '데이터_검증결과.xlsx');
         hideLoading();
     }, 100);
 }

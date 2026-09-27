@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectMeta } from '@/types';
 import { NewProjectModal } from './NewProjectModal';
-import { PlusIcon, UploadIcon, Trash2Icon, FolderOpenIcon } from 'lucide-react';
+import { HelpDialog } from '@/components/help/HelpDialog';
+import { PlusIcon, UploadIcon, Trash2Icon, FolderOpenIcon, HelpCircleIcon } from 'lucide-react';
 
 interface ProjectHomeProps {
   projects: ProjectMeta[];
@@ -17,6 +18,7 @@ interface ProjectHomeProps {
 
 export function ProjectHome({ projects, onCreateProject, onSelectProject, onDeleteProject, onImportJSON }: ProjectHomeProps) {
   const [showModal, setShowModal] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +55,10 @@ export function ProjectHome({ projects, onCreateProject, onSelectProject, onDele
             JSON 불러오기
           </Button>
           <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+          <Button variant="ghost" onClick={() => setShowHelp(true)} className="text-blue-700 hover:bg-blue-50 h-9 px-4 ml-auto">
+            <HelpCircleIcon className="h-4 w-4 mr-1.5" />
+            사용 가이드
+          </Button>
         </div>
 
         {projects.length > 0 && (
@@ -94,6 +100,7 @@ export function ProjectHome({ projects, onCreateProject, onSelectProject, onDele
       </div>
 
       <NewProjectModal open={showModal} onOpenChange={setShowModal} onCreate={onCreateProject} />
+      <HelpDialog open={showHelp} onOpenChange={setShowHelp} />
     </div>
   );
 }

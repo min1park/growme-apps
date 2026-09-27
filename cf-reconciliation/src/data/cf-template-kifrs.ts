@@ -42,6 +42,8 @@ const operatingItems: CFItem[] = [
   { id: 'op-adj-equity-loss', parentId: 'op-adjust', sectionId: 'operating', label: '지분법손실(이익)', level: 3, isSubtotal: false, isEditable: true, order: 17, sign: -1 },
   // 주식보상비용: 자본 원천 → sign = 1
   { id: 'op-adj-stock-comp', parentId: 'op-adjust', sectionId: 'operating', label: '주식보상비용', level: 3, isSubtotal: false, isEditable: true, order: 18, sign: 1 },
+  // 재고자산평가손실: 평가충당금(대차자산) 원천 → sign = -1 (충당금 증가 = 음의 BS증감 × -1 = 양의 조정)
+  { id: 'op-adj-inventory-val', parentId: 'op-adjust', sectionId: 'operating', label: '재고자산평가손실(환입)', level: 3, isSubtotal: false, isEditable: true, order: 19, sign: -1, defaultCfCategories: ['operating'] },
   { id: 'op-wc', parentId: 'op-generated', sectionId: 'operating', label: '(3) 영업활동으로 인한 자산부채의 변동', level: 2, isSubtotal: true, isEditable: false, order: 30, sign: 1 },
   // 운전자본-자산: sign = -1 (자산 증가 → CF 마이너스)
   { id: 'op-wc-ar', parentId: 'op-wc', sectionId: 'operating', label: '매출채권의 감소(증가)', level: 3, isSubtotal: false, isEditable: true, order: 31, sign: -1, defaultCfCategories: ['operating'] },
